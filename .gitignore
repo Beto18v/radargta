@@ -1,0 +1,42 @@
+# ============================================================
+# radargta — Monorepo: .gitignore raíz
+# Cada servicio conserva su .gitignore específico (rg-web,
+# rg-api); este cubre lo global del monorepo y lo que cruza
+# servicios. Reglas de commit: docs/decisions/0004.
+# ============================================================
+
+# --- Node / Next.js (rg-web) ---
+node_modules/
+.next/
+out/
+coverage/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Python / FastAPI (rg-api) ---
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.venv/
+.uv/
+uv.lock.tmp
+
+# --- Entorno / secretos ---
+.env
+.env.*
+!.env.example
+
+# --- Herramientas locales ---
+.engram/
+.atl/
+server.log
+*.log
+
+# --- Editor / SO ---
+.DS_Store
+Thumbs.db
+*.pem
