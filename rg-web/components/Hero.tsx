@@ -127,8 +127,10 @@ export default function Hero() {
 
             {/* Hero background video (PR4, marketing verdict: video only in
                 Hero for now — DiscordCTA later). Decorative overlay ON TOP of
-                the picture still (object-cover). preload="none" + poster=AVIF:
-                the poster IS the LCP image, the video loads after and never
+                the picture still (object-cover). preload="none" + poster=AVIF
+                (hero-16x9-poster.avif = frame 0 OF THE VIDEO — must match the
+                first frame so there's no visual jump at start): the AVIF
+                poster/ladder is still the LCP, the video loads after and never
                 blocks LCP. muted autoplay + loop + playsInline (iOS). Under
                 prefers-reduced-motion CSS hides .hero-video -> the still
                 picture shows. aria-hidden + tabIndex={-1} (decorative, never
@@ -141,7 +143,7 @@ export default function Hero() {
               loop
               playsInline
               preload="none"
-              poster="/hero/cityscape-16x9-2560.avif"
+              poster="/hero/hero-16x9-poster.avif"
               aria-hidden="true"
               tabIndex={-1}
             >
