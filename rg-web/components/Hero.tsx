@@ -15,8 +15,10 @@ import { DISCORD_URL, LAUNCH_DATE } from "@/lib/config";
 // --mask-art-fallback wordmark take over, intentional not broken).
 const HERO_CITYSCAPE_READY = true;
 
-const HERO_ART_16X9 = "/hero/cityscape-16x9.avif";
-const HERO_ART_9X16 = "/hero/cityscape-9x16.avif";
+// PR4 ladder: widthless AVIF dupes were removed (design D5) — these point at
+// the largest real rung (also the <link href> the browser fetches first).
+const HERO_ART_16X9 = "/hero/cityscape-16x9-2560.avif";
+const HERO_ART_9X16 = "/hero/cityscape-9x16-1920.avif";
 
 // Wordmark fill (hero redesign, Option C): solid Vice gradient (gold ->
 // magenta) instead of the cityscape text-fill. User report was "no se notan
@@ -51,14 +53,19 @@ export default function Hero() {
     preload(HERO_ART_16X9, {
       as: "image",
       media: "(min-width: 768px)",
+      // sizes=130vw (design D6, PR4): FHD (1920px x 1.3 = 2496px effective)
+      // requests the new 2560w rung — full-res on Full HD instead of 2400w.
       imageSrcSet:
-        "/hero/cityscape-16x9-640.avif 640w, /hero/cityscape-16x9-1280.avif 1280w, /hero/cityscape-16x9-1920.avif 1920w, /hero/cityscape-16x9-2400.avif 2400w",
-      imageSizes: "100vw",
+        "/hero/cityscape-16x9-640.avif 640w, /hero/cityscape-16x9-1280.avif 1280w, /hero/cityscape-16x9-1920.avif 1920w, /hero/cityscape-16x9-2400.avif 2400w, /hero/cityscape-16x9-2560.avif 2560w",
+      imageSizes: "130vw",
       fetchPriority: "high",
     });
     preload(HERO_ART_9X16, {
       as: "image",
       media: "(max-width: 767px)",
+      // Deviation G (PR4): 9:16 keeps sizes=100vw — at 130vw a DPR3 <=767px
+      // phone would request 9x16-1920 (q78, ~825 KB) as LCP, breaking the
+      // <=2.5s 4G budget; 100vw caps the common mobile LCP at 1280w.
       imageSrcSet:
         "/hero/cityscape-9x16-640.avif 640w, /hero/cityscape-9x16-1280.avif 1280w, /hero/cityscape-9x16-1920.avif 1920w",
       imageSizes: "100vw",
@@ -78,6 +85,7 @@ export default function Hero() {
         <div className="hero-ambient absolute inset-0" />
         {HERO_CITYSCAPE_READY ? (
           <picture>
+            {/* Mobile 9:16 (art-directed portrait). sizes stays 100vw — deviation G. */}
             <source
               media="(max-width: 767px)"
               srcSet="/hero/cityscape-9x16-640.avif 640w, /hero/cityscape-9x16-1280.avif 1280w, /hero/cityscape-9x16-1920.avif 1920w"
@@ -85,14 +93,22 @@ export default function Hero() {
               type="image/avif"
             />
             <source
-              srcSet="/hero/cityscape-16x9-640.avif 640w, /hero/cityscape-16x9-1280.avif 1280w, /hero/cityscape-16x9-1920.avif 1920w, /hero/cityscape-16x9-2400.avif 2400w"
+              media="(max-width: 767px)"
+              srcSet="/hero/cityscape-9x16-640.webp 640w, /hero/cityscape-9x16-1280.webp 1280w, /hero/cityscape-9x16-1920.webp 1920w"
               sizes="100vw"
+              type="image/webp"
+            />
+            {/* Desktop 16:9 — sizes=130vw so FHD requests the 2560w rung. */}
+            <source
+              srcSet="/hero/cityscape-16x9-640.avif 640w, /hero/cityscape-16x9-1280.avif 1280w, /hero/cityscape-16x9-1920.avif 1920w, /hero/cityscape-16x9-2400.avif 2400w, /hero/cityscape-16x9-2560.avif 2560w"
+              sizes="130vw"
               type="image/avif"
             />
-            {/* WebP fallback for the 16:9 source (last source wins on old browsers). */}
+            {/* WebP twin mirrors every served width (design D5 — no missing
+                fallback rung on non-AVIF browsers). */}
             <source
-              srcSet="/hero/cityscape-16x9-1280.webp 1280w, /hero/cityscape-16x9-2400.webp 2400w"
-              sizes="100vw"
+              srcSet="/hero/cityscape-16x9-640.webp 640w, /hero/cityscape-16x9-1280.webp 1280w, /hero/cityscape-16x9-1920.webp 1920w, /hero/cityscape-16x9-2400.webp 2400w, /hero/cityscape-16x9-2560.webp 2560w"
+              sizes="130vw"
               type="image/webp"
             />
             <img
