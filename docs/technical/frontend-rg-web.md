@@ -9,7 +9,7 @@
 
 - Next.js **16.3.4** (App Router) + React **19.2.8** + TypeScript **5** + Tailwind **v4**.
 - **Zero runtime dependencies in Fase 1:** only `next`, `react`, `react-dom` (ADR 0002).
-- **Exception (ADR 0009):** `gsap`, `gsap/ScrollTrigger`, `lenis` allowed for the hero scroll mask ONLY, inside the single client component `HeroScrollFx`. Any other use of these imports is a violation.
+- **Exception (ADR 0009):** `gsap` (3.15.0) + `gsap/ScrollTrigger` + `lenis` (1.3.26) allowed for the hero scroll mask ONLY, inside the single client component `HeroScrollFx`. Installed in PR2. Any other use of these imports is a violation.
 
 ## Motion architecture (two tracks)
 
@@ -34,9 +34,11 @@ The landing motion is split into two tracks so the zero-dep guarantee and the ci
 
 ### Track 2 (PR2) — HeroScrollFx + hero art
 
-- `HeroScrollFx.tsx` is the ONLY consumer of `gsap`/`lenis`. Pattern: `gsap.context(..., "#hero")` + revert, Lenis with `anchors: true`, `prefers-reduced-motion` bailout.
-- **Lenis anchors note (verify in PR2+):** anchor navigation to `#crews`, `#crews-form`, `#hardware` MUST keep working with Lenis active — `anchors: true` + native scrollbar, no focus trap, keyboard Tab/PageDown intact.
+- `HeroScrollFx.tsx` is the ONLY consumer of `gsap`/`lenis`. Pattern: `gsap.context(..., "#hero")` + revert, Lenis with `anchors: true`, `prefers-reduced-motion` bailout. Scrubs a normalized 1.0 timeline: P0 overfill (scale 1.3, `--bg-zoom` 130%) → P1 lockstep 1.3→1.0 (0–40%) → P2 wash + headline (40–70%) → P3 content parallax-out + cue fade (0.15–0.30 / 70–100%).
+- **Lenis anchors note (verify):** anchor navigation to `#crews`, `#crews-form`, `#hardware` MUST keep working with Lenis active — `anchors: true` + native scrollbar, no focus trap, keyboard Tab/PageDown intact.
 - **LCP art (deliberate deviation):** the hero cityscape uses a raw `<picture>` (AVIF + WebP, art-directed 9:16 crop for mobile) + media-scoped `ReactDOM.preload(..., { as: "image", imageSrcSet, imageSizes, media, fetchPriority: "high" })` — NOT `next/image`'s `preload` prop. Rationale: `priority` is **deprecated** in Next 16 (v16.0.0, replaced by `preload`), and the `preload` prop cannot art-direct crops or carry a `media` attribute. The `<img>` carries `fetchpriority="high"`; container `aspect-[16/9]` reserves space (CLS-safe). No `priority` prop anywhere.
+- **Mask mechanism (deliberate deviation):** text-clip via `.mask-base` (`background-clip: text` + `background-image: var(--mask-art)`) — NOT the spec's SVG mask (an SVG data-URI mask cannot load the Anton webfont). GSAP tweens the CSS var `--bg-zoom` (130% → 100%) in lockstep with the art transform. The "6" span gradient was removed — the full "GTA 6" wordmark is the window.
+- **Asset integration gate:** `HERO_CITYSCAPE_READY` in `Hero.tsx` is `false` until the user generates the cityscape (prompt contract in [`docs/technical/hero-cityscape-prompt.md`](hero-cityscape-prompt.md)). Until then: `#hero-art` renders a dusk-gradient fallback (`.hero-art-fallback`, intentional), `.mask-base` uses its `--mask-art-fallback` gradient (wordmark stays visible — PR1 review SUGGESTION applied), and no preload `<link>`s are emitted. Flipping the flag to `true` activates the `<picture>`, `--mask-art`, and the media-scoped preloads (later commit).
 
 ## Asset provenance
 
@@ -44,10 +46,10 @@ Original AI art only (ADR 0008 — no Rockstar/Take-Two trademarks, characters, 
 
 | Asset | Status | Provenance |
 |---|---|---|
-| `public/hero/cityscape-16x9` (+ art-directed 9:16 crop, AVIF/WebP, srcset 640/1280/1920/2400w) | Generated in PR2 | tool/model/date/prompt/negative/seed/post to be recorded here at generation time |
+| `public/hero/cityscape-16x9` (+ art-directed 9:16 crop, AVIF/WebP, srcset 640/1280/1920/2400w) | **Pending user generation** (PR2 wired the fallback + integration gate) | Prompt contract: [`hero-cityscape-prompt.md`](hero-cityscape-prompt.md) (tool = Gemini 2.5 Flash Image primary / Midjourney v7 fallback, full prompt + negative verbatim). tool/model+version/date/seed/post to be recorded here at generation time. |
 | `public/og-image.png` (1200×630, ≤ ~200 KB, "RADAR GTA" text) | Generated in PR3 | tool/model/date/prompt/negative/seed/post to be recorded here at generation time |
 
-Encode with sharp: AVIF q70 (+ WebP fallback); 9:16 = art-directed crop of the SAME 16:9 generation (skyline consistency).
+Encode with sharp: AVIF q70 (+ WebP fallback); 9:16 = art-directed crop of the SAME 16:9 generation (skyline consistency). Integration gate: `HERO_CITYSCAPE_READY` in `components/Hero.tsx` (flips to `true` once the files land).
 
 ## Components
 
@@ -67,6 +69,7 @@ Encode with sharp: AVIF q70 (+ WebP fallback); 9:16 = art-directed crop of the S
 
 | Path                       | Role                                           |
 | -------------------------- | ---------------------------------------------- |
+| `components/HeroScrollFx.tsx` | Hero scrub choreography (GSAP/ScrollTrigger/Lenis — ADR 0009, Track 2). |
 | `components/Countdown.tsx` | Countdown to the `LAUNCH_DATE`.                |
 | `components/CrewForm.tsx`  | Crew registration form (POST to `/api/crews`). |
 | `components/CrewGrid.tsx`  | Crew grid (consumes `seedCrews` in Fase 1).    |
@@ -106,26 +109,31 @@ Run from `rg-web/` (all must pass before commit):
 ### Grep assertions
 
 | # | Assertion | Command (from `rg-web/`) | Applies |
-|---|---|---|---|
+|---|---|---|
 | 1 | Zero `PLACEHOLDER` in built HTML | `npm run build` then `rg "PLACEHOLDER" .next` → zero matches | PR3 (affiliates) |
-| 2 | Hero image preload link + `fetchpriority="high"` present | `rg "rel=\"preload\"" .next` + `rg "fetchpriority" .next` | PR2+ |
+| 2 | Hero image preload links + `fetchpriority="high"` present | `rg "rel=\"preload\"" .next` (expect 2, media-scoped) + `rg "fetchpriority" .next` | PR2+, once `HERO_CITYSCAPE_READY = true` (asset generated) |
 | 3 | No `priority` prop used | `rg "priority" app components` → zero matches (deprecated in Next 16) | PR2+ |
 | 4 | Affiliate links carry `rel="noopener noreferrer sponsored"` | `rg "noopener noreferrer sponsored" components` | PR3 |
 | 5 | `gsap`/`lenis` imports ONLY in `HeroScrollFx` | `rg 'from "(gsap|lenis)"' components` → only `components/HeroScrollFx.tsx` | PR2+ |
-| 6 | Track 1 utilities present in `globals.css` | `rg "fx-grain|fx-vignette|hero-wash|heading-sweep|digit-tick|mask-base|data-reveal|data-parallax" app/globals.css` | PR1 |
+| 6 | Track 1 utilities present in `globals.css` | `rg "fx-grain\|fx-vignette\|hero-wash\|heading-sweep\|digit-tick\|mask-base\|data-reveal\|data-parallax" app/globals.css` | PR1 |
 | 7 | Scroll-driven track guarded | `rg "@supports (animation-timeline: scroll())" app/globals.css` | PR1 |
 | 8 | No `background-attachment: fixed` | `rg "background-attachment" app/globals.css` → zero matches | PR1 |
 | 9 | Grain opacity ≤ 0.06 | `rg "opacity: 0.0[0-6]" app/globals.css` (`.fx-grain`) | PR1 |
-| 10 | Orb blur gated (≤40px default, 90px desktop-only) | `rg "blur\\(40px\\)|blur\\(90px\\)" app/globals.css` + `@media (min-width: 768px)` | PR1 |
-| 11 | Lint + build green | `npm run lint` && `npm run build` | Every PR |
+| 10 | Orb blur gated (≤40px default, 90px desktop-only) | `rg "blur\\(40px\\)\|blur\\(90px\\)" app/globals.css` + `@media (min-width: 768px)` | PR1 |
+| 11 | Lenis anchors configured | `rg "anchors: true" components/HeroScrollFx.tsx` | PR2+ |
+| 12 | Hero scrub targets present (ids) | `rg "hero-title-mask\|hero-art\|hero-wash\|hero-content\|hero-cue" components/Hero.tsx` | PR2+ |
+| 13 | Mask var fallback guards invisible wordmark | `rg "mask-art-fallback" app/globals.css` | PR2+ |
+| 14 | Lint + build green | `npm run lint` && `npm run build` | Every PR |
 
 ### Manual browser checklist
 
-- [ ] Safari (18+/26): hero mask visible via `-webkit-background-clip: text` (PR2); scroll-driven reveals/parallax behave in the supported set.
-- [ ] `prefers-reduced-motion: reduce`: hero static final state, native scroll, no Lenis interception, digit swap instant, no scroll-driven motion (PR2+).
+- [ ] Safari (18+/26): hero mask visible via `-webkit-background-clip: text` — currently the `--mask-art-fallback` dusk gradient (asset pending); once the cityscape lands, the art shows through the wordmark (PR2).
+- [ ] `prefers-reduced-motion: reduce`: hero static final state, native scroll, no Lenis interception, digit swap instant, no scroll-driven motion (PR2).
 - [ ] Track 1 unsupported browser (e.g. older Safari): all `[data-reveal]`/`[data-parallax]` elements render visible and untransformed; page fully usable.
-- [ ] LCP ≤ 2.5s / CLS ≤ 0.1 (hero image preloaded, aspect-reserved) (PR2+).
-- [ ] Keyboard + scrollbar with Lenis active: Tab/PageDown leave the hero normally, scrollbar visible, no focus trap; **anchors `#crews`, `#crews-form`, `#hardware` still navigate** (PR2+).
+- [ ] LCP ≤ 2.5s / CLS ≤ 0.1 (hero image preloaded, aspect-reserved) — **pending cityscape asset**; fallback gradient renders immediately, zero CLS (PR2+).
+- [ ] Keyboard + scrollbar with Lenis active: Tab/PageDown leave the hero normally, scrollbar visible, no focus trap; **anchors `#crews`, `#crews-form`, `#hardware` still navigate** (PR2).
+- [ ] Scrub choreography: mask + art overfill at 1.3 at top, lockstep 1.3→1.0 on scroll, wash fades 40–70%, content parallax-out 70–100%, cue fades 0.15–0.30 (PR2; verify in browser).
+- [ ] Hero without cityscape: `#hero-art` shows the intentional dusk-gradient fallback, wordmark "GTA 6" visible (not transparent), no broken-image icon (PR2).
 - [ ] Grain overlay: `pointer-events` pass through, `aria-hidden` on the div, computed opacity ≤ 0.06 (PR3 application).
 - [ ] Countdown digit change animates transform/opacity only (DevTools inspect during tick); no width change → no CLS (PR3).
 - [ ] Mobile/iOS viewport: no `background-attachment: fixed`, orbs ≤ 40px blur.
