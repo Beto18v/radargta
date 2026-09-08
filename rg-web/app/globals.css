@@ -23,6 +23,26 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Lenis (Track 2, HeroScrollFx) drives scroll programmatically — native CSS
+   smooth-scroll would fight it (jitter / double-smooth on anchor nav to
+   #crews / #crews-form / #hardware). Neutralize it only while Lenis is
+   active; the base rule above keeps native smooth-scroll for the non-Lenis
+   path (no-JS / unsupported browsers), and the prefers-reduced-motion block
+   below restores `auto` for that path (Lenis never initializes there).
+   NOTE: lenis@1.3.26 dist CSS ships NO scroll-behavior rules (verified in
+   node_modules/lenis/dist/lenis.css) — the canonical recommended rules are
+   kept here next to the declaration they override. */
+html.lenis,
+html.lenis body {
+  height: auto;
+  scroll-behavior: auto !important;
+}
+
+html.lenis.lenis-smooth,
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
 body {
   background-color: var(--color-void);
   color: var(--color-mist);
@@ -332,7 +352,9 @@ body {
       linear-gradient(180deg, rgba(255, 210, 123, 0.28), rgba(92, 22, 99, 0.55));
   }
 
-  /* Scroll cue (bottom center, z 20). Fades 0.15-0.30 per design D2. */
+  /* Scroll cue (bottom center, z 20). Fades 0.15-0.30 per design D2.
+     Decorative strip — pointer-events none (consistent with .hero-art and
+     .hero-wash) so it never blocks clicks near the bottom of the hero. */
   .hero-cue {
     position: absolute;
     bottom: 2.25rem;
@@ -344,6 +366,7 @@ body {
     align-items: center;
     gap: 0.5rem;
     color: var(--color-muted);
+    pointer-events: none;
   }
 
   .hero-cue-line {
