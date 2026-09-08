@@ -38,7 +38,7 @@ The landing motion is split into two tracks so the zero-dep guarantee and the ci
 - **Lenis anchors note (verify):** anchor navigation to `#crews`, `#crews-form`, `#hardware` MUST keep working with Lenis active — `anchors: true` + native scrollbar, no focus trap, keyboard Tab/PageDown intact.
 - **LCP art (deliberate deviation):** the hero cityscape uses a raw `<picture>` (AVIF + WebP, art-directed 9:16 crop for mobile) + media-scoped `ReactDOM.preload(..., { as: "image", imageSrcSet, imageSizes, media, fetchPriority: "high" })` — NOT `next/image`'s `preload` prop. Rationale: `priority` is **deprecated** in Next 16 (v16.0.0, replaced by `preload`), and the `preload` prop cannot art-direct crops or carry a `media` attribute. The `<img>` carries `fetchpriority="high"`; container `aspect-[16/9]` reserves space (CLS-safe). No `priority` prop anywhere.
 - **Mask mechanism (deliberate deviation):** text-clip via `.mask-base` (`background-clip: text` + `background-image: var(--mask-art)`) — NOT the spec's SVG mask (an SVG data-URI mask cannot load the Anton webfont). GSAP tweens the CSS var `--bg-zoom` (130% → 100%) in lockstep with the art transform. The "6" span gradient was removed — the full "GTA 6" wordmark is the window.
-- **Asset integration gate:** `HERO_CITYSCAPE_READY` in `Hero.tsx` is `false` until the user generates the cityscape (prompt contract in [`docs/technical/hero-cityscape-prompt.md`](hero-cityscape-prompt.md)). Until then: `#hero-art` renders a dusk-gradient fallback (`.hero-art-fallback`, intentional), `.mask-base` uses its `--mask-art-fallback` gradient (wordmark stays visible — PR1 review SUGGESTION applied), and no preload `<link>`s are emitted. Flipping the flag to `true` activates the `<picture>`, `--mask-art`, and the media-scoped preloads (later commit).
+- **Asset integration gate:** `HERO_CITYSCAPE_READY` in `Hero.tsx` is `true` (assets generated + encoded 2026-09-07, prompt contract + provenance in [`docs/technical/hero-cityscape-prompt.md`](hero-cityscape-prompt.md)). With the flag on: `#hero-art` renders the `<picture>` (AVIF + WebP, art-directed 9:16 for mobile), `.mask-base` clips the 16:9 art via `--mask-art`, and two media-scoped preload `<link>`s are emitted. Flipping the flag back to `false` restores the dusk-gradient fallback (`.hero-art-fallback`, intentional) + `--mask-art-fallback` wordmark (no broken image, no transparent text).
 
 ## Asset provenance
 
@@ -46,7 +46,7 @@ Original AI art only (ADR 0008 — no Rockstar/Take-Two trademarks, characters, 
 
 | Asset | Status | Provenance |
 |---|---|---|
-| `public/hero/cityscape-16x9` (+ art-directed 9:16 crop, AVIF/WebP, srcset 640/1280/1920/2400w) | **Pending user generation** (PR2 wired the fallback + integration gate) | Prompt contract: [`hero-cityscape-prompt.md`](hero-cityscape-prompt.md) (tool = Gemini 2.5 Flash Image primary / Midjourney v7 fallback, full prompt + negative verbatim). tool/model+version/date/seed/post to be recorded here at generation time. |
+| `public/hero/cityscape-16x9` (+ 9:16 art, AVIF/WebP, srcset 640/1280/1920/2400w) | **Generated 2026-09-07** (integrated, `HERO_CITYSCAPE_READY = true`) | User-generated (tool unknown — no EXIF tag), encoded with sharp 0.35.4 (one-off, not a runtime dep). 16:9 source 2752×1536, 9:16 source 1536×2752 (separate native portrait, NOT a crop — deviation). AVIF q70/q66, WebP q80. Full record: [`hero-cityscape-prompt.md`](hero-cityscape-prompt.md) §Generation record. |
 | `public/og-image.png` (1200×630, ≤ ~200 KB, "RADAR GTA" text) | Generated in PR3 | tool/model/date/prompt/negative/seed/post to be recorded here at generation time |
 
 Encode with sharp: AVIF q70 (+ WebP fallback); 9:16 = art-directed crop of the SAME 16:9 generation (skyline consistency). Integration gate: `HERO_CITYSCAPE_READY` in `components/Hero.tsx` (flips to `true` once the files land).
@@ -124,16 +124,17 @@ Run from `rg-web/` (all must pass before commit):
 | 12 | Hero scrub targets present (ids) | `rg "hero-title-mask\|hero-art\|hero-wash\|hero-content\|hero-cue" components/Hero.tsx` | PR2+ |
 | 13 | Mask var fallback guards invisible wordmark | `rg "mask-art-fallback" app/globals.css` | PR2+ |
 | 14 | Lint + build green | `npm run lint` && `npm run build` | Every PR |
+| 15 | Lenis neutralizes CSS smooth-scroll (no double-smooth / jitter on anchors) | `rg "lenis.lenis-smooth|scroll-behavior: auto !important" app/globals.css` (rules present) | PR2+ (review fix) |
 
 ### Manual browser checklist
 
-- [ ] Safari (18+/26): hero mask visible via `-webkit-background-clip: text` — currently the `--mask-art-fallback` dusk gradient (asset pending); once the cityscape lands, the art shows through the wordmark (PR2).
+- [ ] Safari (18+/26): hero mask visible via `-webkit-background-clip: text` — the cityscape art shows through the "GTA 6" wordmark (PR2; asset generated 2026-09-07).
 - [ ] `prefers-reduced-motion: reduce`: hero static final state, native scroll, no Lenis interception, digit swap instant, no scroll-driven motion (PR2).
 - [ ] Track 1 unsupported browser (e.g. older Safari): all `[data-reveal]`/`[data-parallax]` elements render visible and untransformed; page fully usable.
-- [ ] LCP ≤ 2.5s / CLS ≤ 0.1 (hero image preloaded, aspect-reserved) — **pending cityscape asset**; fallback gradient renders immediately, zero CLS (PR2+).
-- [ ] Keyboard + scrollbar with Lenis active: Tab/PageDown leave the hero normally, scrollbar visible, no focus trap; **anchors `#crews`, `#crews-form`, `#hardware` still navigate** (PR2).
+- [ ] LCP ≤ 2.5s / CLS ≤ 0.1 (hero image preloaded, aspect-reserved) — cityscape AVIF integrated (2026-09-07); verify in browser/DevTools.
+- [ ] Keyboard + scrollbar with Lenis active: Tab/PageDown leave the hero normally, scrollbar visible, no focus trap; **anchors `#crews`, `#crews-form`, `#hardware` still navigate** (PR2; smooth-scroll conflict neutralized in globals.css — review fix).
 - [ ] Scrub choreography: mask + art overfill at 1.3 at top, lockstep 1.3→1.0 on scroll, wash fades 40–70%, content parallax-out 70–100%, cue fades 0.15–0.30 (PR2; verify in browser).
-- [ ] Hero without cityscape: `#hero-art` shows the intentional dusk-gradient fallback, wordmark "GTA 6" visible (not transparent), no broken-image icon (PR2).
+- [ ] Hero with cityscape: `#hero-art` shows the AVIF art, wordmark "GTA 6" clips it (`.mask-base` + `--mask-art`), no broken-image icon (PR2; fallback only if `HERO_CITYSCAPE_READY = false`).
 - [ ] Grain overlay: `pointer-events` pass through, `aria-hidden` on the div, computed opacity ≤ 0.06 (PR3 application).
 - [ ] Countdown digit change animates transform/opacity only (DevTools inspect during tick); no width change → no CLS (PR3).
 - [ ] Mobile/iOS viewport: no `background-attachment: fixed`, orbs ≤ 40px blur.
