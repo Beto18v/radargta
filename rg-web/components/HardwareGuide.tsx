@@ -10,7 +10,7 @@ export default function HardwareGuide() {
         description="GTA 6 llega primero a consolas. Estos son los equipos recomendados para jugarlo desde el día 1 con la mejor experiencia."
       />
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div data-reveal className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {HARDWARE.map((item) => (
           <article
             key={item.key}

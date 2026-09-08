@@ -97,7 +97,14 @@ export default function Countdown() {
             </span>
           ) : null}
           <div className="count-cell">
-            <span className={`count-digit ${!ready ? "opacity-40" : ""}`}>
+            {/* Key remount (design D4): value change remounts the span so the
+                digit-tick keyframe replays (transform/opacity only, no CLS).
+                Reduced-motion: global 0.01ms kill-switch makes it an instant
+                swap — current behavior preserved, no JS motion check. */}
+            <span
+              key={`${cell.key}-${values[cell.key]}`}
+              className={`count-digit ${!ready ? "opacity-40" : ""}`}
+            >
               {values[cell.key]}
             </span>
             <span className="count-label">{cell.label}</span>

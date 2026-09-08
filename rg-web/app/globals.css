@@ -11,7 +11,7 @@
   --color-cobalt: #1d2fa0;
   --color-violet: #8b5cf6;
   --color-purple-deep: #5c1663;
-  --color-muted: #9b94b3;
+  --color-muted: #bcb6d8;
   --color-mist: #e9e6f5;
 
   --font-sans: var(--font-geist-sans);
@@ -47,10 +47,15 @@ body {
   background-color: var(--color-void);
   color: var(--color-mist);
   font-family: var(--font-sans);
+  /* Atmospheric Vice glow — all layers on the dusk-to-magenta→purple-deep axis
+     (sunset #ffd27b → magenta #df3a93 → purple-deep #5c1663). Kept desaturated
+     ("llamar sin saturar"): warm amber breathes from the top, magenta and deep
+     purple anchor the body, a faint cyan counterpoint at the low right. */
   background-image:
-    radial-gradient(60rem 60rem at 85% -10%, rgba(92, 22, 99, 0.4), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 35%, rgba(255, 47, 179, 0.1), transparent 60%),
-    radial-gradient(50rem 50rem at 110% 80%, rgba(0, 229, 255, 0.08), transparent 60%),
+    radial-gradient(70rem 46rem at 78% -12%, rgba(255, 210, 123, 0.07), transparent 60%),
+    radial-gradient(60rem 60rem at 85% -10%, rgba(92, 22, 99, 0.36), transparent 62%),
+    radial-gradient(54rem 54rem at -8% 34%, rgba(223, 58, 147, 0.08), transparent 62%),
+    radial-gradient(50rem 50rem at 108% 82%, rgba(0, 229, 255, 0.06), transparent 62%),
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 48px),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 48px);
   /* Fixed-attachment removed from body — iOS Safari perf/behavior risk.
@@ -267,6 +272,16 @@ body {
     color: transparent;
   }
 
+  /* Wordmark legibility over the cityscape art. The letters are a transparent
+     window onto the image, so a very subtle dark edge-stroke keeps the glyph
+     boundaries readable against bright neon without obscuring the art (the
+     text-clip fill renders above the stroke, so it reads as a thin outline).
+     Applied to the hero h1 alongside .mask-base. */
+  .wordmark-legibility {
+    -webkit-text-stroke: 1.5px rgba(10, 9, 16, 0.4);
+    text-shadow: 0 4px 30px rgba(10, 9, 16, 0.45);
+  }
+
   /* Gradient sweep for section headings (~8s alternate). Unsupported /
      reduced-motion browsers keep the static .text-vice-gradient fallback
      (component applies it) — this class is the animated upgrade. */
@@ -284,6 +299,15 @@ body {
     background-clip: text;
     color: transparent;
     animation: heading-sweep 8s ease-in-out infinite alternate;
+  }
+
+  /* DiscordCTA gradient border — slow lateral sheen along the ring. The border
+     is the 1px padding ring of the p-px wrapper; background-size 200% lets the
+     gradient drift left/right (background-position, no layout). Reduced-motion
+     global kill-switch (0.01ms) freezes it at the initial position. */
+  .sheen-border {
+    background-size: 200% 100%;
+    animation: border-sheen 7s ease-in-out infinite alternate;
   }
 
   /* Static film grain — feTurbulence data-URI, MUST NOT animate. The rendered
@@ -369,11 +393,15 @@ body {
     pointer-events: none;
   }
 
+  /* Visible, subtle cue bar (~3rem wide) — the earlier 1px vertical strip
+     collapsed to an invisible hairline. A short horizontal accent reads as
+     "scroll" at a glance and survives the reduced-motion kill (opacity-only). */
   .hero-cue-line {
-    width: 1px;
-    height: 2.75rem;
-    background: linear-gradient(180deg, var(--color-cyan), transparent);
-    animation: cue-drop 2s ease-in-out infinite;
+    width: 3rem;
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, transparent, var(--color-cyan), transparent);
+    animation: cue-glow 2.4s ease-in-out infinite;
   }
 }
 
@@ -472,27 +500,29 @@ body {
   }
 }
 
-/* Scroll cue line — repeated drop, transform-only (compositor). */
-@keyframes cue-drop {
+@keyframes border-sheen {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+/* Scroll cue bar — gentle opacity+scale glow, transform/opacity only
+   (compositor). Horizontal accent, fires in both reduced-motion kill modes. */
+@keyframes cue-glow {
   0% {
-    transform: scaleY(0);
-    transform-origin: top;
     opacity: 0;
+    transform: scaleX(0.5);
   }
-  35% {
-    transform: scaleY(1);
-    transform-origin: top;
+  45% {
     opacity: 1;
-  }
-  70% {
-    transform: scaleY(1);
-    transform-origin: bottom;
-    opacity: 1;
+    transform: scaleX(1);
   }
   100% {
-    transform: scaleY(0);
-    transform-origin: bottom;
     opacity: 0;
+    transform: scaleX(1);
   }
 }
 

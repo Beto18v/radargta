@@ -101,10 +101,14 @@ export default function Hero() {
       {/* Wash layer (z 30) — fades in during P2 (40-70% scroll). */}
       <div id="hero-wash" aria-hidden="true" className="hero-wash" />
 
-      {/* Wordmark window (z 10) — text-clip mask over the cityscape. */}
+      {/* Wordmark window (z 10) — text-clip mask over the cityscape.
+          Sizing: the previous clamp(5rem,22vw,15rem) drove "GTA 6" past the
+          centered container and wrapped/clipped (height ≈ 1.3 lines). The new
+          viewport-relative clamp stays under the container width on every
+          breakpoint and `whitespace-nowrap` hard-guarantees one line. */}
       <div id="hero-title-mask" className="relative z-10 mb-6">
         <h1
-          className="mask-base font-display text-[clamp(5rem,22vw,15rem)] uppercase leading-none tracking-tight"
+          className="mask-base wordmark-legibility font-display text-[clamp(3.5rem,12vw,10rem)] uppercase leading-none tracking-tight whitespace-nowrap"
           style={
             HERO_CITYSCAPE_READY
               ? ({ "--mask-art": `url(${HERO_ART_16X9})` } as React.CSSProperties)
@@ -119,7 +123,7 @@ export default function Hero() {
       <div id="hero-content" className="relative z-20 flex flex-col items-center">
         <span className="eyebrow mb-6">Comunidad GTA 6 en español</span>
 
-        <p className="mb-10 max-w-2xl text-balance text-lg text-muted sm:text-xl">
+        <p className="mb-10 max-w-2xl text-balance text-lg leading-relaxed text-muted sm:text-xl">
           Vice City. Leonida. Cuando el sol se apaga y el neón enciende, todos
           tienen algo que ganar — y más que perder.
         </p>

@@ -187,7 +187,7 @@ export default function CrewForm() {
     errors[field] ? "border-neon-pink/60" : "";
 
   return (
-    <div className="glass-card p-6 sm:p-8">
+    <div data-reveal className="glass-card p-6 sm:p-8">
       <form onSubmit={handleSubmit} noValidate>
         <div
           className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden"
