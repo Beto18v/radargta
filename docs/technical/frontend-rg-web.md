@@ -37,12 +37,12 @@ The landing motion is split into two tracks so the zero-dep guarantee and the ci
 - `HeroScrollFx.tsx` is the ONLY consumer of `gsap`/`lenis`. Pattern: `gsap.context(..., "#hero")` + revert, Lenis with `anchors: true`, `prefers-reduced-motion` bailout. Scrubs a normalized 1.0 timeline: P0 overfill (scale 1.3, `--bg-zoom` 130%) → P1 lockstep 1.3→1.0 (0–40%) → P2 wash + headline (40–70%) → P3 content parallax-out + cue fade (0.15–0.30 / 70–100%).
 - **Lenis anchors note (verify):** anchor navigation to `#crews`, `#crews-form`, `#hardware` MUST keep working with Lenis active — `anchors: true` + native scrollbar, no focus trap, keyboard Tab/PageDown intact.
 - **LCP art (deliberate deviation):** the hero cityscape uses a raw `<picture>` (AVIF + WebP, art-directed 9:16 crop for mobile) + media-scoped `ReactDOM.preload(..., { as: "image", imageSrcSet, imageSizes, media, fetchPriority: "high" })` — NOT `next/image`'s `preload` prop. Rationale: `priority` is **deprecated** in Next 16 (v16.0.0, replaced by `preload`), and the `preload` prop cannot art-direct crops or carry a `media` attribute. The `<img>` carries `fetchpriority="high"`; container `aspect-[16/9]` reserves space (CLS-safe). No `priority` prop anywhere.
-- **Mask mechanism (deliberate deviation):** text-clip via `.mask-base` (`background-clip: text` + `background-image: var(--mask-art)`) — NOT the spec's SVG mask (an SVG data-URI mask cannot load the Anton webfont). GSAP tweens the CSS var `--bg-zoom` (130% → 100%) in lockstep with the art transform. The "6" span gradient was removed — the full "GTA 6" wordmark is the window.
-- **Asset integration gate:** `HERO_CITYSCAPE_READY` in `Hero.tsx` is `true` (assets generated + encoded 2026-09-07, prompt contract + provenance in [`docs/technical/hero-cityscape-prompt.md`](hero-cityscape-prompt.md)). With the flag on: `#hero-art` renders the `<picture>` (AVIF + WebP, art-directed 9:16 for mobile), `.mask-base` clips the 16:9 art via `--mask-art`, and two media-scoped preload `<link>`s are emitted. Flipping the flag back to `false` restores the dusk-gradient fallback (`.hero-art-fallback`, intentional) + `--mask-art-fallback` wordmark (no broken image, no transparent text).
+- **Mask mechanism (deliberate deviation, adapted in the hero redesign):** text-clip via `.mask-base` (`background-clip: text` + `background-image: var(--mask-art)`) — NOT the spec's SVG mask (an SVG data-URI mask cannot load the Anton webfont). GSAP tweens the CSS var `--bg-zoom` (130% → 100%) in lockstep with the art transform. Hero redesign (Option C): `--mask-art` now carries the solid Vice gradient (`HERO_WORDMARK_GRADIENT`, gold→magenta) instead of the art URL — the wordmark is no longer a window onto the cityscape (user report: "no se notan las letras"); the art stays as the full-bleed `#hero-art` background and the scroll-mask choreography is untouched.
+- **Asset integration gate:** `HERO_CITYSCAPE_READY` in `Hero.tsx` is `true` (assets generated + encoded 2026-09-07, prompt contract + provenance in [`docs/technical/hero-cityscape-prompt.md`](hero-cityscape-prompt.md)). With the flag on: `#hero-art` renders the `<picture>` (AVIF + WebP, art-directed 9:16 for mobile) as the full-bleed background, the wordmark fills with the Vice gradient via `--mask-art`, and two media-scoped preload `<link>`s are emitted. Flipping the flag back to `false` restores the dusk-gradient fallback (`.hero-art-fallback`, intentional) + the `.mask-base` `--mask-art-fallback` wordmark gradient (no broken image, no transparent text).
 
 ## Asset provenance
 
-Original AI art only (ADR 0008 — no Rockstar/Take-Two trademarks, characters, logos, or Vice City art likeness; explicit negative prompt). Dusk palette pinned to tokens: `void #0a0910`, `neon-pink #ff2fb3`, `cyan #00e5ff`, `sunset #ffd27b`. Recorded per asset (tool, model + version, date, full prompt, negative prompt, seed, post-processing):
+Original AI art only (ADR 0008 — no Rockstar/Take-Two trademarks, characters, logos, or Vice City art likeness; explicit negative prompt). Dusk palette pinned to tokens: `void #0b0710`, `neon-pink #ff2fb3`, `cyan #00e5ff`, `sunset #ffd27b`. Recorded per asset (tool, model + version, date, full prompt, negative prompt, seed, post-processing):
 
 | Asset | Status | Provenance |
 |---|---|---|
@@ -86,11 +86,11 @@ Encode with sharp: AVIF q70 (+ WebP fallback); 9:16 = art-directed crop of the S
 
 ## Design system — Vice City / Leonida
 
-- **Palette:** background `void #0a0910`, `neon-pink #ff2fb3`, `magenta #df3a93`, `cyan #00e5ff`, `sunset #ffd27b`, `cobalt #1d2fa0`, `purple-deep #5c1663`.
+- **Palette:** background `void #0b0710`, `neon-pink #ff2fb3`, `magenta #df3a93`, `cyan #00e5ff`, `sunset #ffd27b`, `cobalt #1d2fa0`, `purple-deep #5c1663`.
 - **Typography:** **Anton** (condensed display, equivalent to Rockstar's Art Deco) + **Geist** (sans) via `next/font/google`.
 - **CSS utilities (`app/globals.css`):**
   - `.text-vice-gradient` — radial gradient `#ffd27b → #ff2fb3 → #df3a93 → #5c1663`.
-  - `.mask-base` — text-clip mask base (hero wordmark window, PR2).
+  - `.mask-base` — text-clip mask base (hero wordmark, PR2; fills via `--mask-art`, now the Vice gradient — hero redesign).
   - `.heading-sweep` — animated gradient sweep (falls back to `.text-vice-gradient`).
   - `.neon-glow-pink` / `.neon-glow-cyan` — neon glow.
   - `.glass-card` — glass-style card.
@@ -126,21 +126,22 @@ Run from `rg-web/` (all must pass before commit):
 | 14 | Lint + build green | `npm run lint` && `npm run build` | Every PR |
 | 15 | Lenis neutralizes CSS smooth-scroll (no double-smooth / jitter on anchors) | `rg "lenis.lenis-smooth|scroll-behavior: auto !important" app/globals.css` (rules present) | PR2+ (review fix) |
 | 16 | PR3 polish applied: countdown tick key remount + DiscordCTA sheen + muted token | `rg "cell.key\}-\\\$\{values\[cell.key\]" components/Countdown.tsx` (key present) + `rg "sheen-border" components/DiscordCTA.tsx app/globals.css` + `rg "color-muted: #bcb6d8" app/globals.css` | PR3 (polish slice) |
+| 17 | Hero redesign (Option C) applied: gradient wordmark + badge + tagline + countdown framing + scrim | `rg "RADAR GTA" components/Hero.tsx` + `rg "LA COMUNIDAD HISPANA DE GTA 6" components/Hero.tsx` + `rg "LA ESCENA SE ORGANIZA" components/Hero.tsx` + `rg "LANZAMIENTO GTA 6" components/Hero.tsx` + `rg "19 NOV 2026" components/Hero.tsx` + `rg "hero-scrim" app/globals.css components/Hero.tsx` + `rg "HERO_WORDMARK_GRADIENT" components/Hero.tsx` (wordmark fills via `--mask-art` gradient, no `wordmark-legibility` on the h1) | Hero redesign |
 
 ### Manual browser checklist
 
-- [ ] Safari (18+/26): hero mask visible via `-webkit-background-clip: text` — the cityscape art shows through the "GTA 6" wordmark (PR2; asset generated 2026-09-07).
+- [ ] Safari (18+/26): hero title mask renders via `-webkit-background-clip: text` — the "RADAR GTA" wordmark shows the Vice gradient fill (gold→magenta) with clean letterforms (hero redesign; assets generated 2026-09-07).
 - [ ] `prefers-reduced-motion: reduce`: hero static final state, native scroll, no Lenis interception, digit swap instant, no scroll-driven motion (PR2).
 - [ ] Track 1 unsupported browser (e.g. older Safari): all `[data-reveal]`/`[data-parallax]` elements render visible and untransformed; page fully usable.
 - [ ] LCP ≤ 2.5s / CLS ≤ 0.1 (hero image preloaded, aspect-reserved) — cityscape AVIF integrated (2026-09-07); verify in browser/DevTools.
 - [ ] Keyboard + scrollbar with Lenis active: Tab/PageDown leave the hero normally, scrollbar visible, no focus trap; **anchors `#crews`, `#crews-form`, `#hardware` still navigate** (PR2; smooth-scroll conflict neutralized in globals.css — review fix).
 - [ ] Scrub choreography: mask + art overfill at 1.3 at top, lockstep 1.3→1.0 on scroll, wash fades 40–70%, content parallax-out 70–100%, cue fades 0.15–0.30 (PR2; verify in browser).
-- [ ] Hero with cityscape: `#hero-art` shows the AVIF art, wordmark "GTA 6" clips it (`.mask-base` + `--mask-art`), no broken-image icon (PR2; fallback only if `HERO_CITYSCAPE_READY = false`).
+- [ ] Hero with cityscape: `#hero-art` shows the AVIF art as the full-bleed background, wordmark "RADAR GTA" renders the solid Vice gradient (`.mask-base` + `--mask-art` gradient, no cityscape text-fill — legibility), scrim band behind the text block, no broken-image icon (hero redesign; fallback only if `HERO_CITYSCAPE_READY = false`).
 - [ ] Grain overlay: `pointer-events` pass through, `aria-hidden` on the div, computed opacity ≤ 0.06 (applied PR3 polish — `.fx-grain` + `.fx-vignette` rendered in `app/layout.tsx`).
-- [ ] Visual polish (PR3 polish slice): hero wordmark "GTA 6" fits on ONE line at every breakpoint (no wrap/clip — `clamp(3.5rem,12vw,10rem)` + `whitespace-nowrap` + `tracking-tight`); letters legible over the art (`.wordmark-legibility` subtle dark edge-stroke + shadow); hero cue renders as a ~3rem horizontal bar (not a 1px collapsed hairline); section headings use the `.heading-sweep` gradient + `data-reveal` (`.text-vice-gradient` static fallback class applied alongside); body glows on the desaturated sunset→magenta→purple-deep axis; DiscordCTA border sheen animates (`border-sheen` on the `p-px` wrapper, `data-reveal` moved to the inner panel so the two animations don't collide).
+- [ ] Visual polish (PR3 polish slice + hero redesign): hero wordmark "RADAR GTA" fits on ONE line at every breakpoint (no wrap/clip — `clamp(3.5rem,12vw,10rem)` + `whitespace-nowrap` + `tracking-tight`); letters legible via the solid Vice gradient fill — NO text-stroke/shadow (`.wordmark-legibility` utility exists but is NOT applied; official GTA landing uses zero shadows); badge "LA COMUNIDAD HISPANA DE GTA 6" + tagline "LA ESCENA SE ORGANIZA" frame the wordmark; countdown framed by "LANZAMIENTO GTA 6" label + "19 NOV 2026" date; `#hero-scrim` (center band + edge vignette + top/bottom darkening) keeps the text block readable over the art; hero cue renders as a ~3rem horizontal bar (not a 1px collapsed hairline); section headings use the `.heading-sweep` gradient + `data-reveal` (`.text-vice-gradient` static fallback class applied alongside); body glows on the desaturated sunset→magenta→purple-deep axis; DiscordCTA border sheen animates (`border-sheen` on the `p-px` wrapper, `data-reveal` moved to the inner panel so the two animations don't collide).
 - [ ] Countdown digit change animates transform/opacity only (DevTools inspect during tick — `key={`${cell.key}-${values[cell.key]}`}` remount replays `digit-tick`); no width change → no CLS (PR3).
 - [ ] Mobile/iOS viewport: no `background-attachment: fixed`, orbs ≤ 40px blur.
-- [ ] Disclosure copy visible next to the hardware selector, contrast ≥ 4.5:1 (PR3).
+- [ ] Disclosure copy visible next to the hardware selector, contrast ≥ 4.5:1 (applied in hero-redesign batch — "Si compras a través de estos enlaces, Radar GTA recibe una comisión sin coste extra para ti."; affiliate anchors carry `rel="noopener noreferrer sponsored"`; URLs remain PLACEHOLDER until the commercial session).
 
 ## i18n
 
