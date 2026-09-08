@@ -125,6 +125,7 @@ Run from `rg-web/` (all must pass before commit):
 | 13 | Mask var fallback guards invisible wordmark | `rg "mask-art-fallback" app/globals.css` | PR2+ |
 | 14 | Lint + build green | `npm run lint` && `npm run build` | Every PR |
 | 15 | Lenis neutralizes CSS smooth-scroll (no double-smooth / jitter on anchors) | `rg "lenis.lenis-smooth|scroll-behavior: auto !important" app/globals.css` (rules present) | PR2+ (review fix) |
+| 16 | PR3 polish applied: countdown tick key remount + DiscordCTA sheen + muted token | `rg "cell.key\}-\\\$\{values\[cell.key\]" components/Countdown.tsx` (key present) + `rg "sheen-border" components/DiscordCTA.tsx app/globals.css` + `rg "color-muted: #bcb6d8" app/globals.css` | PR3 (polish slice) |
 
 ### Manual browser checklist
 
@@ -135,8 +136,9 @@ Run from `rg-web/` (all must pass before commit):
 - [ ] Keyboard + scrollbar with Lenis active: Tab/PageDown leave the hero normally, scrollbar visible, no focus trap; **anchors `#crews`, `#crews-form`, `#hardware` still navigate** (PR2; smooth-scroll conflict neutralized in globals.css — review fix).
 - [ ] Scrub choreography: mask + art overfill at 1.3 at top, lockstep 1.3→1.0 on scroll, wash fades 40–70%, content parallax-out 70–100%, cue fades 0.15–0.30 (PR2; verify in browser).
 - [ ] Hero with cityscape: `#hero-art` shows the AVIF art, wordmark "GTA 6" clips it (`.mask-base` + `--mask-art`), no broken-image icon (PR2; fallback only if `HERO_CITYSCAPE_READY = false`).
-- [ ] Grain overlay: `pointer-events` pass through, `aria-hidden` on the div, computed opacity ≤ 0.06 (PR3 application).
-- [ ] Countdown digit change animates transform/opacity only (DevTools inspect during tick); no width change → no CLS (PR3).
+- [ ] Grain overlay: `pointer-events` pass through, `aria-hidden` on the div, computed opacity ≤ 0.06 (applied PR3 polish — `.fx-grain` + `.fx-vignette` rendered in `app/layout.tsx`).
+- [ ] Visual polish (PR3 polish slice): hero wordmark "GTA 6" fits on ONE line at every breakpoint (no wrap/clip — `clamp(3.5rem,12vw,10rem)` + `whitespace-nowrap` + `tracking-tight`); letters legible over the art (`.wordmark-legibility` subtle dark edge-stroke + shadow); hero cue renders as a ~3rem horizontal bar (not a 1px collapsed hairline); section headings use the `.heading-sweep` gradient + `data-reveal` (`.text-vice-gradient` static fallback class applied alongside); body glows on the desaturated sunset→magenta→purple-deep axis; DiscordCTA border sheen animates (`border-sheen` on the `p-px` wrapper, `data-reveal` moved to the inner panel so the two animations don't collide).
+- [ ] Countdown digit change animates transform/opacity only (DevTools inspect during tick — `key={`${cell.key}-${values[cell.key]}`}` remount replays `digit-tick`); no width change → no CLS (PR3).
 - [ ] Mobile/iOS viewport: no `background-attachment: fixed`, orbs ≤ 40px blur.
 - [ ] Disclosure copy visible next to the hardware selector, contrast ≥ 4.5:1 (PR3).
 
