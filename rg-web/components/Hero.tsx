@@ -9,7 +9,7 @@ import { DISCORD_URL, LAUNCH_DATE } from "@/lib/config";
 // provenance for the drop-in paths and specs).
 // When `true`:
 //   - #hero-art renders the <picture> (AVIF + WebP, art-directed 9:16 for
-//     mobile) and the wordmark (.mask-base) clips the 16:9 art via --mask-art.
+//     mobile) as the full-bleed hero background.
 //   - two media-scoped preload <link>s are emitted (16:9 >=768px / 9:16 <=767px).
 // Flip to `false` only if the assets are removed again (fallback gradient +
 // --mask-art-fallback wordmark take over, intentional not broken).
@@ -17,6 +17,16 @@ const HERO_CITYSCAPE_READY = true;
 
 const HERO_ART_16X9 = "/hero/cityscape-16x9.avif";
 const HERO_ART_9X16 = "/hero/cityscape-9x16.avif";
+
+// Wordmark fill (hero redesign, Option C): solid Vice gradient (gold ->
+// magenta) instead of the cityscape text-fill. User report was "no se notan
+// las letras" — solid light-on-dark reads clean with zero stroke/shadow
+// (official GTA landing uses zero shadows; depth comes from color). Passed as
+// --mask-art so .mask-base keeps the text-clip + --bg-zoom scroll-mask
+// choreography; when the flag is off the .mask-base dusk-gradient fallback
+// takes over.
+const HERO_WORDMARK_GRADIENT =
+  "linear-gradient(180deg, #ffd27b 0%, #df3a93 100%)";
 
 const jsonLdEvent = {
   "@context": "https://schema.org",
@@ -63,7 +73,7 @@ export default function Hero() {
     >
       <HeroScrollFx />
 
-      {/* Art layer (z 0). Cityscape fills the hero; masked by the wordmark above. */}
+      {/* Art layer (z 0) — full-bleed cityscape background. */}
       <div id="hero-art" aria-hidden="true" className="hero-art">
         <div className="hero-ambient absolute inset-0" />
         {HERO_CITYSCAPE_READY ? (
@@ -98,38 +108,47 @@ export default function Hero() {
         )}
       </div>
 
+      {/* Legibility scrim (z 5) — static overlay behind the text block, above
+          the art (z 0), below the title mask (z 10) / content (z 20). Keeps
+          badge, wordmark and countdown readable over the bright cityscape
+          without dimming it to flat. Always on — the GSAP .hero-wash is the
+          separate scroll-driven layer. */}
+      <div id="hero-scrim" aria-hidden="true" className="hero-scrim" />
+
       {/* Wash layer (z 30) — fades in during P2 (40-70% scroll). */}
       <div id="hero-wash" aria-hidden="true" className="hero-wash" />
 
-      {/* Wordmark window (z 10) — text-clip mask over the cityscape.
+      {/* Title block (z 10) — badge + gradient wordmark + tagline (Option C).
           Sizing: the previous clamp(5rem,22vw,15rem) drove "GTA 6" past the
-          centered container and wrapped/clipped (height ≈ 1.3 lines). The new
+          centered container and wrapped/clipped (height ≈ 1.3 lines). The
           viewport-relative clamp stays under the container width on every
-          breakpoint and `whitespace-nowrap` hard-guarantees one line. */}
-      <div id="hero-title-mask" className="relative z-10 mb-6">
+          breakpoint and `whitespace-nowrap` hard-guarantees one line. The
+          GSAP scroll-mask choreography (scale + --bg-zoom) targets this
+          wrapper. */}
+      <div id="hero-title-mask" className="relative z-10 mb-10">
+        <span className="hero-badge">LA COMUNIDAD HISPANA DE GTA 6</span>
         <h1
-          className="mask-base wordmark-legibility font-display text-[clamp(3.5rem,12vw,10rem)] uppercase leading-none tracking-tight whitespace-nowrap"
+          className="mask-base font-display text-[clamp(3.5rem,12vw,10rem)] uppercase leading-none tracking-tight whitespace-nowrap"
           style={
             HERO_CITYSCAPE_READY
-              ? ({ "--mask-art": `url(${HERO_ART_16X9})` } as React.CSSProperties)
+              ? ({ "--mask-art": HERO_WORDMARK_GRADIENT } as React.CSSProperties)
               : undefined
           }
         >
-          GTA 6
+          RADAR GTA
         </h1>
+        <span className="hero-tagline">LA ESCENA SE ORGANIZA</span>
       </div>
 
-      {/* Content layer (z 20) — parallax-out during P3 (70-100% scroll). */}
+      {/* Content layer (z 20) — countdown framing + CTAs. */}
       <div id="hero-content" className="relative z-20 flex flex-col items-center">
-        <span className="eyebrow mb-6">Comunidad GTA 6 en español</span>
-
-        <p className="mb-10 max-w-2xl text-balance text-lg leading-relaxed text-muted sm:text-xl">
-          Vice City. Leonida. Cuando el sol se apaga y el neón enciende, todos
-          tienen algo que ganar — y más que perder.
-        </p>
-
-        <div id="hero-countdown" className="mb-12">
+        <div
+          id="hero-countdown"
+          className="mb-12 flex flex-col items-center gap-3"
+        >
+          <span className="countdown-label">LANZAMIENTO GTA 6</span>
           <Countdown />
+          <span className="date-line">19 NOV 2026</span>
         </div>
 
         <div className="flex flex-col items-center gap-4 sm:flex-row">
