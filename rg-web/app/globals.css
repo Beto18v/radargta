@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-void: #0a0910;
+  --color-void: #0b0710;
   --color-abyss: #14111d;
   --color-panel: #1b1726;
   --color-neon-pink: #ff2fb3;
@@ -11,7 +11,7 @@
   --color-cobalt: #1d2fa0;
   --color-violet: #8b5cf6;
   --color-purple-deep: #5c1663;
-  --color-muted: #9b94b3;
+  --color-muted: #bcb6d8;
   --color-mist: #e9e6f5;
 
   --font-sans: var(--font-geist-sans);
@@ -23,14 +23,39 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Lenis (Track 2, HeroScrollFx) drives scroll programmatically — native CSS
+   smooth-scroll would fight it (jitter / double-smooth on anchor nav to
+   #crews / #crews-form / #hardware). Neutralize it only while Lenis is
+   active; the base rule above keeps native smooth-scroll for the non-Lenis
+   path (no-JS / unsupported browsers), and the prefers-reduced-motion block
+   below restores `auto` for that path (Lenis never initializes there).
+   NOTE: lenis@1.3.26 dist CSS ships NO scroll-behavior rules (verified in
+   node_modules/lenis/dist/lenis.css) — the canonical recommended rules are
+   kept here next to the declaration they override. */
+html.lenis,
+html.lenis body {
+  height: auto;
+  scroll-behavior: auto !important;
+}
+
+html.lenis.lenis-smooth,
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
 body {
   background-color: var(--color-void);
   color: var(--color-mist);
   font-family: var(--font-sans);
+  /* Atmospheric Vice glow — all layers on the dusk-to-magenta→purple-deep axis
+     (sunset #ffd27b → magenta #df3a93 → purple-deep #5c1663). Kept desaturated
+     ("llamar sin saturar"): warm amber breathes from the top, magenta and deep
+     purple anchor the body, a faint cyan counterpoint at the low right. */
   background-image:
-    radial-gradient(60rem 60rem at 85% -10%, rgba(92, 22, 99, 0.4), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 35%, rgba(255, 47, 179, 0.1), transparent 60%),
-    radial-gradient(50rem 50rem at 110% 80%, rgba(0, 229, 255, 0.08), transparent 60%),
+    radial-gradient(70rem 46rem at 78% -12%, rgba(255, 210, 123, 0.07), transparent 60%),
+    radial-gradient(60rem 60rem at 85% -10%, rgba(92, 22, 99, 0.36), transparent 62%),
+    radial-gradient(54rem 54rem at -8% 34%, rgba(223, 58, 147, 0.08), transparent 62%),
+    radial-gradient(50rem 50rem at 108% 82%, rgba(0, 229, 255, 0.06), transparent 62%),
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 48px),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 48px);
   /* Fixed-attachment removed from body — iOS Safari perf/behavior risk.
@@ -148,6 +173,171 @@ body {
     color: var(--color-cyan);
   }
 
+  /* Hero eyebrow (PR4 HUD) - "RADAR" brand line above the wordmark. NON-h1
+     (spec: plain text, not a heading), tracked caps, mist #e9e6f5 reading
+     >= 4.5:1 over the dark scrim center band. Font-size clamp keeps it
+     >= 0.875rem (14px) on the smallest phones. `padding-left` compensates the
+     trailing letter-spacing so tracked uppercase optically centers under
+     text-center. */
+  .hero-eyebrow {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: clamp(0.875rem, 1.4vw, 1rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4em;
+    padding-left: 0.4em;
+    color: var(--color-mist);
+    margin-bottom: 1.25rem;
+  }
+
+  /* HUD telemetry panel (PR4 HUD) - hairline frame + cyan corner brackets +
+     translucent void fill around the countdown block. The 8 corner strokes
+     are background layers (18px arms, 1px thick) so no extra DOM is needed;
+     the 1px border carries the frame. Translucent void + small backdrop blur
+     keep digits readable over the bright art without dimming it to flat. */
+  .hud-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.1rem;
+    width: max-content;
+    max-width: 100%;
+    padding: 1.5rem 2rem 1.4rem;
+    border: 1px solid rgba(233, 230, 245, 0.1);
+    background-color: rgba(11, 7, 16, 0.45);
+    backdrop-filter: blur(6px);
+    background-image:
+      linear-gradient(rgba(0, 229, 255, 0.7), rgba(0, 229, 255, 0.7)),
+      linear-gradient(rgba(0, 229, 255, 0.7), rgba(0, 229, 255, 0.7)),
+      linear-gradient(rgba(0, 229, 255, 0.7), rgba(0, 229, 255, 0.7)),
+      linear-gradient(rgba(0, 229, 255, 0.7), rgba(0, 229, 255, 0.7)),
+      linear-gradient(rgba(0, 229, 255, 0.7), rgba(0, 229, 255, 0.7)),
+      linear-gradient(rgba(0, 229, 255, 0.7), rgba(0, 229, 255, 0.7)),
+      linear-gradient(rgba(0, 229, 255, 0.7), rgba(0, 229, 255, 0.7)),
+      linear-gradient(rgba(0, 229, 255, 0.7), rgba(0, 229, 255, 0.7));
+    background-size:
+      18px 1px,
+      1px 18px,
+      18px 1px,
+      1px 18px,
+      18px 1px,
+      1px 18px,
+      18px 1px,
+      1px 18px;
+    background-position:
+      top left,
+      top left,
+      top right,
+      top right,
+      bottom left,
+      bottom left,
+      bottom right,
+      bottom right;
+    background-repeat: no-repeat;
+  }
+
+  /* HUD panel label - small caps + wide tracking (telemetry header). */
+  .hud-label {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    padding-left: 0.3em;
+    color: var(--color-mist);
+  }
+
+  /* HUD telemetry rows container - one hairline separates the countdown
+     readout from the FECHA / UBICACIÓN lines below. */
+  .hud-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.35rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid rgba(233, 230, 245, 0.12);
+  }
+
+  .hud-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 2rem;
+    width: 100%;
+  }
+
+  /* Row label - caps + wide tracking (matches .hud-label language). */
+  .hud-key {
+    font-family: var(--font-sans);
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    color: var(--color-muted);
+  }
+
+  /* Telemetry value - Geist Mono (spec: HUD values are mono). */
+  .hud-value {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    color: var(--color-mist);
+    white-space: nowrap;
+  }
+
+  /* Belonging micro-status (marketing winner) — HUD label language: small
+     caps + wide tracking + ▸ prefix. Real text is sentence-case; CSS
+     uppercases it (a11y: the AT reads the sentence, not scrambled caps).
+     In-flow between the telemetry panel and the CTAs. */
+  .hud-status {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    padding-left: 0.3em;
+    color: var(--color-mist);
+    margin-bottom: 2.5rem;
+  }
+
+  /* Hero scrim (PR4) - static legibility overlay behind the text block, above
+     the art (z 5) but below the title mask (z 10) / content (z 20). Three
+     layers: a center band directly behind the badge/wordmark/tagline/
+     countdown block (the radial + top/bottom layers alone left dead-center
+     untouched, exactly where the text sits), an edge vignette, and sky/
+     foreground darkening. Keeps the text readable over the bright cityscape
+     without dimming it to flat. Always on (not tied to scroll - the GSAP
+     .hero-wash is the separate scroll-driven layer). */
+  .hero-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        180deg,
+        transparent 30%,
+        rgba(11, 7, 16, 0.42) 50%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse at center,
+        transparent 28%,
+        rgba(11, 7, 16, 0.55) 100%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(11, 7, 16, 0.4) 0%,
+        transparent 42%,
+        rgba(11, 7, 16, 0.5) 100%
+      );
+  }
+
   .input-field {
     width: 100%;
     border-radius: 0.75rem;
@@ -195,7 +385,9 @@ body {
   }
 
   .count-digit {
-    font-family: var(--font-display);
+    /* PR4 HUD (D3): digits are telemetry values -> Geist Mono. Colors /
+       clamp / tick / pulse / key-remount untouched. */
+    font-family: var(--font-mono);
     font-size: clamp(2.6rem, 9vw, 5.5rem);
     line-height: 1;
     color: var(--color-cyan);
@@ -216,25 +408,64 @@ body {
   }
 
   .count-sep {
-    font-family: var(--font-display);
+    /* PR4 HUD (D3): separators join the mono digits -> Geist Mono. */
+    font-family: var(--font-mono);
     font-size: clamp(2.2rem, 7vw, 4.5rem);
     line-height: 1;
     color: var(--color-neon-pink);
     animation: colon-pulse 1s ease-in-out infinite;
   }
 
+  /* PR4 mobile fix: the digits' clamp minimum (2.6rem) + min-width forced a
+     419px row inside a 342px panel at 390px viewport — the digits overflowed
+     the hud-panel. On small screens we let vw drive the size (a 2-digit cell
+     at ~8.5vw fits), clamping up once there's room. Placed AFTER the base
+     count rules so it wins the cascade. Desktop unchanged. */
+  @media (max-width: 767px) {
+    .count-digit {
+      font-size: clamp(1.6rem, 8.5vw, 3.2rem);
+    }
+    .count-sep {
+      font-size: clamp(1.4rem, 6.5vw, 2.6rem);
+    }
+    .count-cell {
+      min-width: 0;
+    }
+  }
+
   /* Text-clip mask base — PR2 applies it to the hero wordmark.
      Dev: text-clip (NOT SVG mask) — an SVG data-URI mask cannot load the
      Anton webfont (letter shapes would fall back wrong). --mask-art holds the
      art URL; --bg-zoom is tweened by GSAP (130% -> 100%) in HeroScrollFx.
-     Default --bg-zoom 100% = static final state (no-JS / reduced-motion). */
+     Default --bg-zoom 100% = static final state (no-JS / reduced-motion).
+     --mask-art-fallback guards the invisible-wordmark footgun: if --mask-art
+     is unset (hero cityscape pending user generation), the wordmark renders
+     the dusk gradient instead of transparent text. */
   .mask-base {
-    background-image: var(--mask-art);
+    --mask-art-fallback: radial-gradient(
+      circle at 50% 40%,
+      #ffd27b 0%,
+      #ff2fb3 45%,
+      #df3a93 65%,
+      #5c1663 100%
+    );
+    background-image: var(--mask-art, var(--mask-art-fallback));
     background-size: var(--bg-zoom, 100%) auto;
     background-position: center;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  /* Wordmark legibility - OPTIONAL utility (hero redesign PR4). The hero
+     wordmark now uses the clean Vice gradient fill (gold -> magenta) which
+     reads clearly on the dark base WITHOUT any stroke/shadow (official GTA
+     landing uses zero shadows - depth comes from color). Kept as an available
+     utility in case a future cityscape text-fill wordmark needs an edge
+     stroke again; not applied to the current h1. */
+  .wordmark-legibility {
+    -webkit-text-stroke: 1.5px rgba(11, 7, 16, 0.4);
+    text-shadow: 0 4px 30px rgba(11, 7, 16, 0.45);
   }
 
   /* Gradient sweep for section headings (~8s alternate). Unsupported /
@@ -254,6 +485,15 @@ body {
     background-clip: text;
     color: transparent;
     animation: heading-sweep 8s ease-in-out infinite alternate;
+  }
+
+  /* DiscordCTA gradient border — slow lateral sheen along the ring. The border
+     is the 1px padding ring of the p-px wrapper; background-size 200% lets the
+     gradient drift left/right (background-position, no layout). Reduced-motion
+     global kill-switch (0.01ms) freezes it at the initial position. */
+  .sheen-border {
+    background-size: 200% 100%;
+    animation: border-sheen 7s ease-in-out infinite alternate;
   }
 
   /* Static film grain — feTurbulence data-URI, MUST NOT animate. The rendered
@@ -279,7 +519,7 @@ body {
     background: radial-gradient(
       ellipse at center,
       transparent 55%,
-      rgba(10, 9, 16, 0.5) 100%
+      rgba(11, 7, 16, 0.5) 100%
     );
   }
 
@@ -294,9 +534,110 @@ body {
     background: linear-gradient(
       180deg,
       var(--color-void) 0%,
-      rgba(10, 9, 16, 0.82) 35%,
+      rgba(11, 7, 16, 0.82) 35%,
       transparent 60%
     );
+  }
+
+  /* Hero cityscape art layer (z 0) — LCP. GSAP scales 1.3 -> 1.0 in lockstep
+     with the wordmark mask during P1 (PR2). pointer-events none so content
+     above stays interactive; aria-hidden on the rendered div. */
+  .hero-art {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  /* Hero background video (PR4) — overlays the <picture> still (both are
+     children of #hero-art, so the GSAP scale tween 1.3 -> 1.0 applies to the
+     moving art). object-cover fills the 16:9 (desktop) / 9:16 (mobile)
+     sources; the AVIF poster (16x9-2560) is the LCP, the video loads after
+     (preload="none") and never blocks it. Decorative: the <video> carries
+     aria-hidden + tabIndex={-1}; clicks pass through (#hero-art is
+     pointer-events none). Under prefers-reduced-motion this layer is
+     display:none -> the still <picture> shows. */
+  .hero-video {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Graceful fallback while public/hero/ AVIF/WebP files are pending user
+     generation (see docs/technical/hero-cityscape-prompt.md). A dusk skyline
+     gradient on the Vice tokens — intentional, not a broken image. Replaced
+     by the <picture> once HERO_CITYSCAPE_READY flips to true. */
+  .hero-art-fallback {
+    background:
+      radial-gradient(70% 55% at 78% 18%, rgba(255, 47, 179, 0.5), transparent 62%),
+      radial-gradient(60% 45% at 18% 32%, rgba(0, 229, 255, 0.42), transparent 60%),
+      linear-gradient(180deg, #2b1440 0%, #14111d 38%, #0b0710 72%),
+      linear-gradient(180deg, rgba(255, 210, 123, 0.28), rgba(92, 22, 99, 0.55));
+  }
+
+  /* Scroll cue (bottom center, z 20). Fades 0.15-0.30 per design D2.
+     Decorative strip — pointer-events none (consistent with .hero-art and
+     .hero-wash) so it never blocks clicks near the bottom of the hero. */
+  .hero-cue {
+    position: absolute;
+    bottom: 2.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-muted);
+    pointer-events: none;
+  }
+
+  /* Visible, subtle cue bar (~3rem wide) — the earlier 1px vertical strip
+     collapsed to an invisible hairline. A short horizontal accent reads as
+     "scroll" at a glance and survives the reduced-motion kill (opacity-only). */
+  .hero-cue-line {
+    width: 3rem;
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, transparent, var(--color-cyan), transparent);
+    animation: cue-glow 2.4s ease-in-out infinite;
+  }
+
+  /* Radar dial (PR4 HUD) - decorative, absolute bottom-right of the hero
+     (HUD minimap convention). aria-hidden + pointer-events none come from the
+     element/component. Zero runtime deps: plain CSS keyframes on the sweep
+     group (NOT gated by the Track 1 @supports — spec WARNING: the motif must
+     never be missing). */
+  .hero-radar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-radar svg {
+    width: clamp(10rem, 24vmin, 13.5rem);
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Smaller dial on phones so it stays clear of the CTAs / scroll cue in the
+     tight mobile hero (390px). */
+  @media (max-width: 767px) {
+    .hero-radar svg {
+      width: 6rem;
+    }
+  }
+
+  /* Rotating sweep. transform-box: view-box rotates around the SVG viewBox
+     centre (100,100) — fill-box would orbit the wedge's own off-centre bbox. */
+  .hero-radar-sweep {
+    transform-box: view-box;
+    transform-origin: center;
+    animation: radar-sweep 4s linear infinite;
   }
 }
 
@@ -395,6 +736,40 @@ body {
   }
 }
 
+/* Radar dial sweep (PR4 HUD) — plain keyframes so the motif is independent of
+   the Track 1 @supports gate. transform/opacity-free: rotate only. */
+@keyframes radar-sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes border-sheen {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+/* Scroll cue bar — gentle opacity+scale glow, transform/opacity only
+   (compositor). Horizontal accent, fires in both reduced-motion kill modes. */
+@keyframes cue-glow {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.5);
+  }
+  45% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
 /* Track 1 — zero-dep scroll-driven motion (CSS only, ADR 0009).
    Guarded: browsers without scroll-driven animation support get the static
    final state (visible, untransformed). transform/opacity only (compositor). */
@@ -450,5 +825,17 @@ body {
   [data-reveal],
   [data-parallax] {
     animation: none !important;
+  }
+
+  /* Radar dial: visible but frozen under reduced-motion (spec scenario). */
+  .hero-radar-sweep {
+    animation: none !important;
+  }
+
+  /* Hero background video: NEVER plays under reduced-motion — display:none
+     on the video layer falls back to the still <picture> (AVIF) beneath it
+     (same art, zero motion). CSS-only: no JS check, no autoplay attempt. */
+  .hero-video {
+    display: none;
   }
 }

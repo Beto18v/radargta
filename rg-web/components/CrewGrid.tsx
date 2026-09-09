@@ -121,7 +121,7 @@ export default function CrewGrid({ crews }: { crews: Crew[] }) {
       </p>
 
       {filtered.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div data-reveal className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((crew) => (
             <CrewCard key={crew.id} crew={crew} />
           ))}
