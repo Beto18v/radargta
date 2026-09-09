@@ -149,7 +149,7 @@ export default function Hero() {
             >
               <source
                 media="(min-width: 768px)"
-                src="/hero/hero-16x9-loop.mp4"
+                src="/hero/hero-16x9-1080.mp4"
                 type="video/mp4"
               />
               <source
