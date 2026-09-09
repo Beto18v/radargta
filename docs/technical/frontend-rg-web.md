@@ -3,12 +3,51 @@
 **What:** MVP landing of the RadarGTA platform with a countdown to launch, affiliate hardware guide and crew directory.
 **Why:** the business depends on organic traffic; server-side SEO, $0 cost and a DOM prepared for Fase 2 animations are required.
 **Where:** `rg-web/` (App Router).
-**How to verify:** `npm run build` in `rg-web` (no errors) and `npm run dev` for visual review.
+**How to verify:** `npm run lint` + `npm run build` in `rg-web` (both green) and the verify contract below.
 
 ## Stack
 
 - Next.js **16.3.4** (App Router) + React **19.2.8** + TypeScript **5** + Tailwind **v4**.
-- **Zero runtime dependencies in Fase 1:** only `next`, `react`, `react-dom`.
+- **Zero runtime dependencies in Fase 1:** only `next`, `react`, `react-dom` (ADR 0002).
+- **Exception (ADR 0009):** `gsap`, `gsap/ScrollTrigger`, `lenis` allowed for the hero scroll mask ONLY, inside the single client component `HeroScrollFx`. Any other use of these imports is a violation.
+
+## Motion architecture (two tracks)
+
+The landing motion is split into two tracks so the zero-dep guarantee and the cinematic centerpiece coexist:
+
+| Track | Tech | Scope | Ships |
+|---|---|---|---|
+| 1 — CSS scroll-driven (zero-dep) | `animation-timeline: view()/scroll()` utilities in `app/globals.css`, guarded by `@supports (animation-timeline: scroll())` | Section reveals (`[data-reveal]`), parallax (`[data-parallax]`), gradient sweep (`.heading-sweep`), countdown digit tick (`digit-tick`), grain/vignette overlays (`.fx-grain`/`.fx-vignette`), hero wash (`.hero-wash`), text-clip mask base (`.mask-base`) | Always; unsupported browsers get the static final state (visible, untransformed) |
+| 2 — GSAP/Lenis scrub | `HeroScrollFx` (client) + ADR 0009 deps | Hero scroll mask choreography (P0 mask overfill → P1 counter-zoom → P2 wash + headline → P3 parallax-out) | PR2; bails out entirely under `prefers-reduced-motion: reduce` (static final state, native scroll, no Lenis) |
+
+### Track 1 utilities (`app/globals.css`)
+
+- `[data-reveal]` — fade + rise once via `view()` timeline (`animation-range: entry 0% cover 40%`); `[data-parallax]` — `translateY` via `scroll(root)`, transform-only (compositor). Both live inside `@supports (animation-timeline: scroll())`; reduced-motion kill-switch sets `animation: none` on them explicitly (scroll-driven animations ignore `animation-duration`).
+- `.heading-sweep` — 8s alternate gradient sweep on section headings; falls back to the static `.text-vice-gradient` (component applies it) when unsupported or reduced-motion.
+- `digit-tick` keyframe — transform/opacity only (no width change → no CLS); replays via key remount (`key={`${cell.key}-${values[cell.key]}`}`) in `Countdown.tsx`; reduced-motion = instant swap (existing behavior preserved).
+- `.fx-grain` — feTurbulence data-URI static overlay, `opacity: 0.05` (≤ 0.06), `pointer-events: none`, rendered div carries `aria-hidden="true"`. MUST NOT animate.
+- `.fx-vignette` — radial transparent → void overlay; replaces the removed `background-attachment: fixed` on `body` (iOS perf/behavior risk).
+- `.hero-wash` — dedicated layer (z 30) for the P2 wash; opacity 0 by default, GSAP tweens `autoAlpha` in PR2.
+- `.mask-base` — text-clip mask base (`background-clip: text` + `background-size: var(--bg-zoom, 100%)`). **Deliberate deviation from the spec's SVG-mask wording:** an SVG data-URI mask cannot load the Anton webfont (letter shapes would fall back wrong), so the mask is text-clip instead; `-webkit-background-clip: text` provides the Safari prefix. PR1 lays the utility only; PR2 applies it to the hero.
+- Mobile GPU gating: `background-attachment: fixed` removed from `body`; orb blur ≤ 40px by default, 90px only inside `(min-width: 768px) and (prefers-reduced-motion: no-preference)`.
+- `.eyebrow` bumped to `0.78rem / 700` for ≥ 4.5:1 contrast.
+
+### Track 2 (PR2) — HeroScrollFx + hero art
+
+- `HeroScrollFx.tsx` is the ONLY consumer of `gsap`/`lenis`. Pattern: `gsap.context(..., "#hero")` + revert, Lenis with `anchors: true`, `prefers-reduced-motion` bailout.
+- **Lenis anchors note (verify in PR2+):** anchor navigation to `#crews`, `#crews-form`, `#hardware` MUST keep working with Lenis active — `anchors: true` + native scrollbar, no focus trap, keyboard Tab/PageDown intact.
+- **LCP art (deliberate deviation):** the hero cityscape uses a raw `<picture>` (AVIF + WebP, art-directed 9:16 crop for mobile) + media-scoped `ReactDOM.preload(..., { as: "image", imageSrcSet, imageSizes, media, fetchPriority: "high" })` — NOT `next/image`'s `preload` prop. Rationale: `priority` is **deprecated** in Next 16 (v16.0.0, replaced by `preload`), and the `preload` prop cannot art-direct crops or carry a `media` attribute. The `<img>` carries `fetchpriority="high"`; container `aspect-[16/9]` reserves space (CLS-safe). No `priority` prop anywhere.
+
+## Asset provenance
+
+Original AI art only (ADR 0008 — no Rockstar/Take-Two trademarks, characters, logos, or Vice City art likeness; explicit negative prompt). Dusk palette pinned to tokens: `void #0a0910`, `neon-pink #ff2fb3`, `cyan #00e5ff`, `sunset #ffd27b`. Recorded per asset (tool, model + version, date, full prompt, negative prompt, seed, post-processing):
+
+| Asset | Status | Provenance |
+|---|---|---|
+| `public/hero/cityscape-16x9` (+ art-directed 9:16 crop, AVIF/WebP, srcset 640/1280/1920/2400w) | Generated in PR2 | tool/model/date/prompt/negative/seed/post to be recorded here at generation time |
+| `public/og-image.png` (1200×630, ≤ ~200 KB, "RADAR GTA" text) | Generated in PR3 | tool/model/date/prompt/negative/seed/post to be recorded here at generation time |
+
+Encode with sharp: AVIF q70 (+ WebP fallback); 9:16 = art-directed crop of the SAME 16:9 generation (skyline consistency).
 
 ## Components
 
@@ -48,11 +87,53 @@
 - **Typography:** **Anton** (condensed display, equivalent to Rockstar's Art Deco) + **Geist** (sans) via `next/font/google`.
 - **CSS utilities (`app/globals.css`):**
   - `.text-vice-gradient` — radial gradient `#ffd27b → #ff2fb3 → #df3a93 → #5c1663`.
+  - `.mask-base` — text-clip mask base (hero wordmark window, PR2).
+  - `.heading-sweep` — animated gradient sweep (falls back to `.text-vice-gradient`).
   - `.neon-glow-pink` / `.neon-glow-cyan` — neon glow.
   - `.glass-card` — glass-style card.
   - `.btn-primary` / `.btn-ghost` — buttons.
-  - `@keyframes neon-pulse` / `float-glow` — micro-interactions.
-  - `@media (prefers-reduced-motion: reduce)` block that disables animations.
+  - `.fx-grain` / `.fx-vignette` — cinematic overlays (static grain + ambient vignette).
+  - `.hero-wash` — P2 wash layer (opacity 0 default, GSAP-tweened in PR2).
+  - `[data-reveal]` / `[data-parallax]` — scroll-driven motion (Track 1, `@supports`-guarded).
+  - `digit-tick` — countdown digit change animation (transform/opacity only).
+  - `@keyframes neon-pulse` / `float-glow` / `digit-pulse` / `colon-pulse` / `digit-tick` / `heading-sweep` / `reveal-rise` / `parallax-drift` — micro-interactions and tracks.
+  - `@media (prefers-reduced-motion: reduce)` block that disables animations (incl. explicit kill of scroll-driven utilities).
+
+## Verify contract (no test runner — grep + manual checklist)
+
+Run from `rg-web/` (all must pass before commit):
+
+### Grep assertions
+
+| # | Assertion | Command (from `rg-web/`) | Applies |
+|---|---|---|---|
+| 1 | Zero `PLACEHOLDER` in built HTML | `npm run build` then `rg "PLACEHOLDER" .next` → zero matches | PR3 (affiliates) |
+| 2 | Hero image preload link + `fetchpriority="high"` present | `rg "rel=\"preload\"" .next` + `rg "fetchpriority" .next` | PR2+ |
+| 3 | No `priority` prop used | `rg "priority" app components` → zero matches (deprecated in Next 16) | PR2+ |
+| 4 | Affiliate links carry `rel="noopener noreferrer sponsored"` | `rg "noopener noreferrer sponsored" components` | PR3 |
+| 5 | `gsap`/`lenis` imports ONLY in `HeroScrollFx` | `rg 'from "(gsap|lenis)"' components` → only `components/HeroScrollFx.tsx` | PR2+ |
+| 6 | Track 1 utilities present in `globals.css` | `rg "fx-grain|fx-vignette|hero-wash|heading-sweep|digit-tick|mask-base|data-reveal|data-parallax" app/globals.css` | PR1 |
+| 7 | Scroll-driven track guarded | `rg "@supports (animation-timeline: scroll())" app/globals.css` | PR1 |
+| 8 | No `background-attachment: fixed` | `rg "background-attachment" app/globals.css` → zero matches | PR1 |
+| 9 | Grain opacity ≤ 0.06 | `rg "opacity: 0.0[0-6]" app/globals.css` (`.fx-grain`) | PR1 |
+| 10 | Orb blur gated (≤40px default, 90px desktop-only) | `rg "blur\\(40px\\)|blur\\(90px\\)" app/globals.css` + `@media (min-width: 768px)` | PR1 |
+| 11 | Lint + build green | `npm run lint` && `npm run build` | Every PR |
+
+### Manual browser checklist
+
+- [ ] Safari (18+/26): hero mask visible via `-webkit-background-clip: text` (PR2); scroll-driven reveals/parallax behave in the supported set.
+- [ ] `prefers-reduced-motion: reduce`: hero static final state, native scroll, no Lenis interception, digit swap instant, no scroll-driven motion (PR2+).
+- [ ] Track 1 unsupported browser (e.g. older Safari): all `[data-reveal]`/`[data-parallax]` elements render visible and untransformed; page fully usable.
+- [ ] LCP ≤ 2.5s / CLS ≤ 0.1 (hero image preloaded, aspect-reserved) (PR2+).
+- [ ] Keyboard + scrollbar with Lenis active: Tab/PageDown leave the hero normally, scrollbar visible, no focus trap; **anchors `#crews`, `#crews-form`, `#hardware` still navigate** (PR2+).
+- [ ] Grain overlay: `pointer-events` pass through, `aria-hidden` on the div, computed opacity ≤ 0.06 (PR3 application).
+- [ ] Countdown digit change animates transform/opacity only (DevTools inspect during tick); no width change → no CLS (PR3).
+- [ ] Mobile/iOS viewport: no `background-attachment: fixed`, orbs ≤ 40px blur.
+- [ ] Disclosure copy visible next to the hardware selector, contrast ≥ 4.5:1 (PR3).
+
+## i18n
+
+All string-bearing files modified by this change are flagged in the i18n inventory (explore §6) for Fase 1.5 extraction. **No extraction in this change** (ADR 0007); strings remain Spanish and unchanged.
 
 ## SEO
 

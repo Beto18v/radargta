@@ -33,7 +33,9 @@ body {
     radial-gradient(50rem 50rem at 110% 80%, rgba(0, 229, 255, 0.08), transparent 60%),
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 48px),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 48px);
-  background-attachment: fixed;
+  /* Fixed-attachment removed from body — iOS Safari perf/behavior risk.
+     The fixed cinematic layers (grain/vignette) live in .fx-grain/.fx-vignette
+     overlay divs instead (see design D3). */
 }
 
 ::selection {
@@ -139,8 +141,8 @@ body {
 
   .eyebrow {
     display: inline-block;
-    font-size: 0.72rem;
-    font-weight: 600;
+    font-size: 0.78rem;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.28em;
     color: var(--color-cyan);
@@ -200,7 +202,9 @@ body {
     text-shadow:
       0 0 20px rgba(0, 229, 255, 0.5),
       0 0 60px rgba(0, 229, 255, 0.25);
-    animation: digit-pulse 2.2s ease-in-out infinite;
+    animation:
+      digit-tick 320ms cubic-bezier(0.2, 0.8, 0.3, 1.2) both,
+      digit-pulse 2.2s ease-in-out 320ms infinite;
   }
 
   .count-label {
@@ -218,6 +222,82 @@ body {
     color: var(--color-neon-pink);
     animation: colon-pulse 1s ease-in-out infinite;
   }
+
+  /* Text-clip mask base — PR2 applies it to the hero wordmark.
+     Dev: text-clip (NOT SVG mask) — an SVG data-URI mask cannot load the
+     Anton webfont (letter shapes would fall back wrong). --mask-art holds the
+     art URL; --bg-zoom is tweened by GSAP (130% -> 100%) in HeroScrollFx.
+     Default --bg-zoom 100% = static final state (no-JS / reduced-motion). */
+  .mask-base {
+    background-image: var(--mask-art);
+    background-size: var(--bg-zoom, 100%) auto;
+    background-position: center;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Gradient sweep for section headings (~8s alternate). Unsupported /
+     reduced-motion browsers keep the static .text-vice-gradient fallback
+     (component applies it) — this class is the animated upgrade. */
+  .heading-sweep {
+    background-image: linear-gradient(
+      110deg,
+      #ffd27b 0%,
+      #ff2fb3 30%,
+      #df3a93 55%,
+      #ff2fb3 80%,
+      #ffd27b 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: heading-sweep 8s ease-in-out infinite alternate;
+  }
+
+  /* Static film grain — feTurbulence data-URI, MUST NOT animate. The rendered
+     div carries aria-hidden="true" + pointer-events pass through (overlay
+     div applied in a later PR — component application, see design D3). */
+
+  .fx-grain {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Ambient vignette — radial transparent -> void, separate layer from grain
+     (independent opacity control). Replaces the removed fixed attachment. */
+  .fx-vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 55%,
+      rgba(10, 9, 16, 0.5) 100%
+    );
+  }
+
+  /* Hero wash layer (z 30, above #hero-content 20, below grain 40). Default
+     opacity 0; GSAP tweens autoAlpha during P2 (40-70% scroll) in PR2. */
+  .hero-wash {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(
+      180deg,
+      var(--color-void) 0%,
+      rgba(10, 9, 16, 0.82) 35%,
+      transparent 60%
+    );
+  }
 }
 
 .hero-ambient::before,
@@ -225,8 +305,17 @@ body {
   content: "";
   position: absolute;
   border-radius: 9999px;
-  filter: blur(90px);
+  /* Mobile GPU gating: ≤40px by default (spec); heavy 90px blur only on
+     desktop with motion allowed. */
+  filter: blur(40px);
   animation: hero-float 14s ease-in-out infinite alternate;
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .hero-ambient::before,
+  .hero-ambient::after {
+    filter: blur(90px);
+  }
 }
 
 .hero-ambient::before {
@@ -279,6 +368,69 @@ body {
   }
 }
 
+/* Countdown digit change — transform/opacity ONLY (no width change -> no CLS).
+   Replays via key remount in Countdown.tsx (PR3); reduced-motion global
+   kill-switch (0.01ms) turns it into an instant swap (current behavior). */
+@keyframes digit-tick {
+  0% {
+    transform: translateY(0.35em) scale(0.92);
+    opacity: 0.4;
+  }
+  60% {
+    transform: translateY(-0.08em) scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes heading-sweep {
+  from {
+    background-position: 0% center;
+  }
+  to {
+    background-position: 100% center;
+  }
+}
+
+/* Track 1 — zero-dep scroll-driven motion (CSS only, ADR 0009).
+   Guarded: browsers without scroll-driven animation support get the static
+   final state (visible, untransformed). transform/opacity only (compositor). */
+@supports (animation-timeline: scroll()) {
+  [data-reveal] {
+    animation: reveal-rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 40%;
+  }
+
+  [data-parallax] {
+    animation: parallax-drift linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes parallax-drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-4rem);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -290,5 +442,13 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Scroll-driven animations ignore animation-duration — kill them explicitly
+     so reduced-motion users get the static final state (visible,
+     untransformed). Lenis is never initialized under reduced-motion (PR2). */
+  [data-reveal],
+  [data-parallax] {
+    animation: none !important;
   }
 }
