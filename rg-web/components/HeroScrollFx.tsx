@@ -50,24 +50,24 @@ export default function HeroScrollFx() {
         },
       });
 
-      // P1 (0 -> 0.4): mask + art overfill 1.15 -> 1.0 in lockstep.
-      // --bg-zoom (text-clip background size) tweened in sync with transform.
-      // Overfill lowered from 1.3 -> 1.15 (user feedback: hero looked too
-      // zoomed-in at P0; 1.15 keeps the scroll-mask motion without the
-      // excessive close-up).
+      // P1 (0 -> 0.4): mask + art overfill 1.0 -> 1.0 (no overfill — user prefers
+      // the hero at 100% natural size; the 1080p video shows crisp at full
+      // resolution). --bg-zoom tween kept inert at 100% so the text-clip
+      // mask stays aligned; the scroll-mask choreography reduces to the
+      // wash (P2) + content parallax (P3) + cue (0.15-0.30).
       tl.fromTo(
         "#hero-title-mask",
-        { scale: 1.15 },
+        { scale: 1 },
         { scale: 1, duration: 0.4 },
         0,
       )
         .fromTo(
           "#hero-title-mask",
-          { "--bg-zoom": "115%" },
+          { "--bg-zoom": "100%" },
           { "--bg-zoom": "100%", duration: 0.4 },
           0,
         )
-        .fromTo("#hero-art", { scale: 1.15 }, { scale: 1, duration: 0.4 }, 0);
+        .fromTo("#hero-art", { scale: 1 }, { scale: 1, duration: 0.4 }, 0);
 
       // P2 (0.4 -> 0.7): wash fades in; headline fades out + rises.
       tl.fromTo(
