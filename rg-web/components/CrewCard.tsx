@@ -24,7 +24,10 @@ export default function CrewCard({ crew }: { crew: Crew }) {
   const badge = PLATFORM_BADGE_STYLES[crew.platform];
 
   return (
-    <article className="glass-card group flex flex-col gap-4 p-6 transition duration-300 hover:-translate-y-1 hover:border-neon-pink/40 hover:shadow-[0_0_24px_rgba(255,47,179,0.18),0_0_60px_rgba(0,229,255,0.08)]">
+    <article
+      data-reveal
+      className="glass-card group flex flex-col gap-4 p-6 transition duration-300 hover:-translate-y-1 hover:border-neon-pink/40 hover:shadow-[0_0_24px_rgba(255,47,179,0.18),0_0_60px_rgba(0,229,255,0.08)]"
+    >
       <div className="flex items-center gap-4">
         <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-neon-pink to-purple-deep font-display text-xl text-white">
           {!crew.logoUrl ? (

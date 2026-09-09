@@ -10,12 +10,12 @@ const BENEFITS = [
 export default function DiscordCTA() {
   return (
     <section id="discord" className="mx-auto w-full max-w-4xl px-6 py-24">
-      <div className="rounded-3xl bg-gradient-to-r from-neon-pink via-magenta to-cyan p-px">
-        <div className="flex flex-col items-center gap-8 rounded-[calc(1.5rem-1px)] bg-abyss px-8 py-14 text-center">
-          <h2 className="font-display text-4xl uppercase leading-none tracking-tight text-mist sm:text-5xl">
+      <div className="sheen-border rounded-3xl bg-gradient-to-r from-neon-pink via-magenta to-cyan p-px">
+        <div data-reveal className="flex flex-col items-center gap-8 rounded-[calc(1.5rem-1px)] bg-abyss px-8 py-14 text-center">
+          <h2 className="font-display text-4xl uppercase leading-none tracking-wide text-mist sm:text-6xl">
             Únete a la comunidad
           </h2>
-          <p className="max-w-xl text-muted">
+          <p className="max-w-xl leading-relaxed text-muted">
             Más de 2.000 jugadores hispanos ya se preparan para el lanzamiento.
             Encuentra tu crew, coordina golpes y no te pierdas nada de la cuenta
             regresiva.

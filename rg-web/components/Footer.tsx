@@ -5,7 +5,10 @@ export default function Footer() {
 
   return (
     <footer className="border-t border-white/10 py-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-6 text-center">
+      <div
+        data-reveal
+        className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-6 text-center"
+      >
         <div className="font-display text-2xl uppercase tracking-wide text-mist">
           Radar<span className="text-vice-gradient"> GTA</span>
         </div>

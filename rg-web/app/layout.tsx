@@ -53,7 +53,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0910",
+  themeColor: "#0b0710",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -62,7 +62,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* Cinematic overlays (design D3) — fixed page-level grain + vignette.
+            aria-hidden decorative; pointer-events none via their classes. Grain
+            (z40) sits above vignette (z39); both keep content interactive and
+            are subtle enough not to muddy the hero wordmark mask. */}
+        <div className="fx-grain" aria-hidden="true" />
+        <div className="fx-vignette" aria-hidden="true" />
+        {children}
+      </body>
     </html>
   );
 }

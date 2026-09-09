@@ -10,7 +10,12 @@ export default function HardwareGuide() {
         description="GTA 6 llega primero a consolas. Estos son los equipos recomendados para jugarlo desde el día 1 con la mejor experiencia."
       />
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <p className="mb-6 max-w-2xl text-xs leading-relaxed text-mist">
+        Si compras a través de estos enlaces, Radar GTA recibe una comisión sin
+        coste extra para ti.
+      </p>
+
+      <div data-reveal className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {HARDWARE.map((item) => (
           <article
             key={item.key}
@@ -28,7 +33,7 @@ export default function HardwareGuide() {
               <a
                 href={item.amazonUrl}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer sponsored"
                 className="btn-primary w-full px-4 py-2.5 text-xs"
               >
                 Ver en Amazon
@@ -36,7 +41,7 @@ export default function HardwareGuide() {
               <a
                 href={item.mlUrl}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer sponsored"
                 className="btn-ghost w-full px-4 py-2.5 text-xs"
               >
                 Ver en MercadoLibre

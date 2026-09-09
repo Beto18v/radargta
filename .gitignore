@@ -40,3 +40,6 @@ server.log
 .DS_Store
 Thumbs.db
 *.pem
+
+# --- Hero source assets (raw masters, never web-served, never committed) ---
+rg-web/.src-assets/
