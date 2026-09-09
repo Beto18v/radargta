@@ -154,7 +154,7 @@ export default function Hero() {
               />
               <source
                 media="(max-width: 767px)"
-                src="/hero/hero-9x16.mp4"
+                src="/hero/hero-9x16-loop.mp4"
                 type="video/mp4"
               />
             </video>

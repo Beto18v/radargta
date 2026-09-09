@@ -416,6 +416,23 @@ body {
     animation: colon-pulse 1s ease-in-out infinite;
   }
 
+  /* PR4 mobile fix: the digits' clamp minimum (2.6rem) + min-width forced a
+     419px row inside a 342px panel at 390px viewport — the digits overflowed
+     the hud-panel. On small screens we let vw drive the size (a 2-digit cell
+     at ~8.5vw fits), clamping up once there's room. Placed AFTER the base
+     count rules so it wins the cascade. Desktop unchanged. */
+  @media (max-width: 767px) {
+    .count-digit {
+      font-size: clamp(1.6rem, 8.5vw, 3.2rem);
+    }
+    .count-sep {
+      font-size: clamp(1.4rem, 6.5vw, 2.6rem);
+    }
+    .count-cell {
+      min-width: 0;
+    }
+  }
+
   /* Text-clip mask base — PR2 applies it to the hero wordmark.
      Dev: text-clip (NOT SVG mask) — an SVG data-URI mask cannot load the
      Anton webfont (letter shapes would fall back wrong). --mask-art holds the
