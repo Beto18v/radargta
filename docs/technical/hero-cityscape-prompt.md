@@ -1,0 +1,164 @@
+# Hero Cityscape — Generation Prompt (vice-landing-overhaul PR2)
+
+Status: **generated 2026-09-07** — assets integrated in `rg-web/public/hero/`
+on branch `feature/vice-overhaul-pr2-hero`; **REGENERATED 2026-09-08 (Nano
+Banana Pro) + PR4 re-encode** (clean JPEG→AVIF/WebP q82/q78 family + 2560w
+rung, see §Regeneration record and §PR4 re-encode record); **hero video FINAL
+2026-09-08** (Veo 3.1 → Real-ESRGAN upscale → ffmpeg trim/crossfade/fade, see
+§Video record). This file is
+the prompt contract for REGENERATION and the provenance record for re-edits;
+update it whenever the asset is re-encoded, regenerated, or a video is made.
+
+## Target files (drop-in paths)
+
+Generated files land in `rg-web/public/hero/` and are served at `/hero/...`.
+Raw masters live OUTSIDE the web root in the gitignored `rg-web/.src-assets/hero/`
+(never web-served, never committed — PR4).
+
+| File                                                                   | Spec                                                      |
+| ---------------------------------------------------------------------- | --------------------------------------------------------- |
+| `cityscape-16x9-640.avif` / `-1280.avif` / `-1920.avif` / `-2400.avif` / `-2560.avif` | 16:9 srcset widths (640/1280/1920/2400/2560w), AVIF q82 |
+| `cityscape-16x9-640.webp` / `-1280.webp` / `-1920.webp` / `-2400.webp` / `-2560.webp` | WebP twin at EVERY 16:9 width (q80) |
+| `cityscape-9x16-640.avif` / `-1280.avif` / `-1920.avif`                | 9:16 art for mobile (srcset 640/1280/1920w; 1920w q78)   |
+| `cityscape-9x16-640.webp` / `-1280.webp` / `-1920.webp`                | WebP twin at EVERY 9:16 width (q80)                       |
+| `hero-16x9-1080.mp4`                                                        | Hero background video desktop (FINAL): 1920×1080, 17.04s, 24fps, H.264 CRF 31, no audio, ≤4MB (2.91MB) |
+| `hero-9x16-loop.mp4`                                                        | Hero background video mobile (FINAL): 720×1280, 8s, 24fps, H.264 CRF 26, no audio, ≤2MB (1.49MB), fade in/out dip-to-black |
+| `hero-16x9-poster.avif`                                                     | Video poster = **frame 0 of `hero-16x9-1080.mp4`** (34.6 KB) — MUST match the video's first frame (no visual jump at start); regenerate after every re-encode |
+
+Integration gate in code: `rg-web/components/Hero.tsx` → `HERO_CITYSCAPE_READY`
+is `true` (assets integrated). Flipping back to `false` restores the
+dusk-gradient fallback (`.hero-art-fallback`) + `--mask-art-fallback` wordmark.
+
+## Recommended tool (regeneration)
+
+- **Primary:** Gemini 2.5 Flash Image ("Nano Banana") — strong at text-free
+  neon dusk scenes, fast, cheap; regenerate until the skyline reads as
+  original (no Rockstar/Take-Two likeness).
+- **Fallback:** Midjourney v7 (same prompt + negative; use `--ar 16:9`, `--v 7`).
+
+## Prompt (English — paste to the model verbatim)
+
+> Cinematic wide establishing shot of an original neon-drenched coastal
+> metropolis at dusk, inspired by 1980s Miami art-deco architecture. Dense
+> downtown skyline with palm trees lining a bayfront boulevard, wet asphalt
+> reflecting neon signage. The sun has just set: deep purple-blue twilight sky
+> with a warm amber glow on the horizon. Dominant colors: hot pink
+> (#ff2fb3), cyan (#00e5ff), warm sunset amber (#ffd27b), deep near-black
+> purple void (#0a0910). Slight atmospheric haze, volumetric light, film
+> grain. Vertical composition friendly: the skyline should read strongly in
+> both a 16:9 landscape crop and a 9:16 portrait crop (tall buildings toward
+> the center, sky above, reflections below). Photorealistic but stylized,
+> high detail, no lens distortion, no text, no watermark, no border.
+
+## Negative prompt (verbatim)
+
+> No text, no letters, no logos, no watermarks, no signatures, no borders, no
+> frames. NOT Grand Theft Auto, NOT Vice City, no Rockstar Games or Take-Two
+> trademarks, no official game characters, no GTA artwork, no game UI, no HUD
+> elements, no cars with game logos, no parodies of official posters. No
+> people faces, no gore, no violence. No motion blur, no camera distortion,
+> no oversaturation.
+
+## On-screen text note
+
+The hero art itself MUST be **text-free**: the "GTA VI" wordmark is applied by
+CSS (`background-clip: text` mask over the art) in `rg-web/components/Hero.tsx`,
+and the landing copy is Spanish (ADR 0007 — no extraction). Do not ask the
+model to render any on-screen text.
+
+## Generation record (2026-09-07, PR2 — superseded by the 2026-09-08 regeneration)
+
+| Field         | Value                                                                                                                                                                                                                                                             |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generated by  | User (host-side, 2026-09-07 21:39 — filename timestamps). Generation tool unknown: no EXIF Software tag in the source JPEGs.                                                                                                                                      |
+| 16:9 source   | `Neon_coastal_metropolis_skyline_…_2K_202609072139.jpeg` — **2752×1536** (3.39 MB raw) → archived as `rg-web/.src-assets/hero/pc.jpeg`                                                                                                                           |
+| 9:16 source   | `Neon_coastal_metropolis_at_dusk_2K_202609072139.jpeg` — **1536×2752** (3.16 MB raw) → archived as `rg-web/.src-assets/hero/movil.jpeg`                                                                                                                           |
+| 9:16 origin   | **Separate native portrait generation** (NOT an art-directed crop of the 16:9). User provided two images; both are on-palette dusk scenes. Deviation from the "crop of the SAME generation" contract — noted for verify; skyline differs between orientations.    |
+| Encoded with  | `sharp` **0.35.4** — one-off build-time script (temp dir, NOT a runtime dependency of rg-web). Invocation recorded in §PR4 re-encode record.                                                                                                                       |
+| AVIF quality  | q70 (smaller variants); **q66 for the large files** — film-grain art exceeded the 350 KB ceiling at q70, so large files were encoded at q66 (≈q70 visually, grain masks the difference). **SUPERSEDED by PR4 (q82/q78 clean re-encode from the JPEG masters).** |
+| WebP quality  | 80                                                                                                                                                                                                                                                                |
+| Resize widths | 16:9 → 640/1280/1920/2400w; 9:16 → 640/1280/1920w. Aspect preserved from source (1.79:1 / 0.558:1 native ratios). **SUPERSEDED by PR4 ladder (16:9 adds 2560w; WebP mirrors every width).**                                                                       |
+| Source files  | Raw JPEGs REMOVED from `public/hero/` after encode (must not be served). **PR4: re-archived (not deleted) under the gitignored `rg-web/.src-assets/hero/`.**                                                                                                        |
+
+## Regeneration record (2026-09-08 — Nano Banana Pro)
+
+| Field              | Value                                                                                                                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why                | User not satisfied with the 2026-09-07 hero art ("más cinematográfico, más limpio"). Private contract: `radargta-business/marketing/herramientas/nano-banana-pro-hero.md` (Spanish). |
+| Generated by       | **Nano Banana Pro (Gemini 3 Pro Image, `gemini-3-pro-image-preview`)** — 2026-09-08, per the radargta-business contract (16:9 + 9:16 native, 4K generation, same scene prompt + 16:9 as style ref for the 9:16, very subtle film grain). |
+| Masters on disk    | `rg-web/.src-assets/hero/pc.jpeg` **2752×1536** (~3.08 MB) + `movil.jpeg` **1536×2752** (~2.98 MB) — gitignored, never served, never committed. Generated above Full HD (contract: 4K) and archived at these pipeline dims. |
+| Grain note         | Prompt lowered grain to "very subtle" — the CSS `.fx-grain` dither overlay adds the rest (avoid double dirt). |
+| 9:16 consistency   | Same scene prompt + style reference from the 16:9 → perceptual scene consistency (color/light identical; skyline may differ slightly — accepted, not pixel-identical). |
+| Re-encode          | Applied the SAME §PR4 re-encode contract below (clean JPEG→AVIF/WebP, no AVIF→AVIF). **Note:** the 9:16 "1920w" rung is natively **1536×2752** (no pointless upscale — srcset label kept at 1920w). |
+| Verification       | Text-free, no Rockstar/Take-Two likeness (ADR 0008), palette faithful, skyline coherent, clean zones for the HUD wordmark + countdown. |
+
+## PR4 re-encode record (2026-09-08)
+
+| Field              | Value                                                                                                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why                | PR4 delta spec re-encode contract — clean JPEG→AVIF/WebP at q78–85 / effort max (old family was AVIF→AVIF-transcoded q70/q66 at PR2; per-file 150–350 KB ceiling superseded by the ≤2.5 s LCP budget). |
+| Inputs             | **JPEG masters only** — `rg-web/.src-assets/hero/pc.jpeg` (2752×1536, 16:9) + `movil.jpeg` (1536×2752, 9:16). NO AVIF→AVIF.                                           |
+| Pipeline           | `sharp(master).rotate().resize({ width }).blur(0.35).avif({ quality, effort: 9 })` / `.webp({ quality: 80, effort: 6 })`. `blur(0.35)` = light film-grain pre-smooth (subtle texture retained — NEVER full denoise). |
+| AVIF quality       | 16:9 **q82** at 640/1280/1920/2400/**2560w** (new top rung, native source 2752w); 9:16 **q82** at 640/1280, **q78** at 1920 (mobile budget guard).                     |
+| WebP quality       | q80 at EVERY width (full parity — no missing fallback rung).                                                                                                         |
+| `sizes`            | 16:9 → `130vw` (FHD 1920×1.3 ≈ 2496 px effective → requests 2560w). 9:16 → **`100vw` kept — deviation G**: at 130vw a DPR3 ≤767 px phone would fetch 9x16-1920 (q78, ~825 KB) as LCP, breaking the 4G budget; 100vw caps the common mobile LCP at 1280w. |
+| Old files pruned   | ALL previous `public/hero/*` deleted first, incl. the widthless dupes `cityscape-16x9.avif` / `cityscape-9x16.avif` (~700 KB duplicate deploy weight, D5) and the partial WebP set (16:9 had only 1280/2400w). |
+| JPEG final state   | Masters relocated OUT of `public/` to the gitignored `.src-assets/hero/` (NOT deleted — enables future clean re-encodes). Zero `.jpeg` under `public/hero/` and in built `.next`. |
+
+Final files (all in `rg-web/public/hero/`, re-encoded 2026-09-08 from the Nano Banana Pro masters — real on-disk ladder):
+
+| File                       | Dims       | Size   |
+| -------------------------- | ---------- | ------ |
+| `cityscape-16x9-640.avif`  | 640×357    | 34 KB  |
+| `cityscape-16x9-640.webp`  | 640×357    | 24 KB  |
+| `cityscape-16x9-1280.avif` | 1280×714   | 103 KB |
+| `cityscape-16x9-1280.webp` | 1280×714   | 72 KB  |
+| `cityscape-16x9-1920.avif` | 1920×1072  | 237 KB |
+| `cityscape-16x9-1920.webp` | 1920×1072  | 151 KB |
+| `cityscape-16x9-2400.avif` | 2400×1340  | 408 KB |
+| `cityscape-16x9-2400.webp` | 2400×1340  | 243 KB |
+| `cityscape-16x9-2560.avif` | 2560×1429  | 476 KB |
+| `cityscape-16x9-2560.webp` | 2560×1429  | 282 KB |
+| `cityscape-9x16-640.avif`  | 640×1147   | 97 KB  |
+| `cityscape-9x16-640.webp`  | 640×1147   | 61 KB  |
+| `cityscape-9x16-1280.avif` | 1280×2293  | 445 KB |
+| `cityscape-9x16-1280.webp` | 1280×2293  | 255 KB |
+| `cityscape-9x16-1920.avif` | 1536×2752  | 577 KB |
+| `cityscape-9x16-1920.webp` | 1536×2752  | 394 KB |
+
+Size note: the regenerated Nano Banana Pro art at q82/q78 is LIGHTER than the
+first 2026-09-08 re-encode (16x9-2560: 744→476 KB; 9x16-1920: 825→577 KB) —
+the cleaner generation compresses better while staying crisp. The 9:16
+"1920w" rung is natively 1536×2752 (master width — no pointless upscale;
+srcset label kept at 1920w). Budget gate is LCP ≤2.5 s on throttled 4G
+(per-file ceiling superseded); verify phase MUST re-measure.
+
+## Video record (2026-09-08 — Veo 3.1 → Real-ESRGAN → ffmpeg; FINAL state)
+
+| Field            | Value                                                                                                                                                                                                                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why              | Marketing verdict (private contract `radargta-business/marketing/herramientas/veo-hero-video.md`): hero background video like the official GTA VI site loops, but OUR city. Rule of gold: the video is NEVER the LCP — the preloaded AVIF `<picture>` ladder stays the LCP; the video poster (frame-0 AVIF) is small and loads with the video.                                                              |
+| Generated by     | **Veo 3.1** (`veo-3.1-generate-preview`, Quality 1080p) — image-to-video from the cityscape (16:9 + 9:16 separate clips), 8s per clip (Veo 3.1 image-to-video only supports 8s; 16:9 and 9:16 are SEPARATE generations, skyline may differ — deviation), no audio, 24fps. Start frame exported PNG/WebP for the API call (Veo input max 20MB, JPEG/PNG/WebP — NOT AVIF). |
+| Desktop master   | **2026-09-08 user Veo output: `loop-master.mp4` 1280×720, 21.9s, 24fps, H.264 + AAC** (archived gitignored at `.src-assets/hero/`). Has a START and an END (NOT a native loop). |
+| Motion concept   | Slow aerial drift over the neon coastal metropolis, two helicopters passing in the distance — NOT people in a car (reads as the official trailer frame; AI faces are the weakest point). Subtle, restrained, cinematic. |
+| Upscale (desktop, FINAL) | **Real-ESRGAN ncnn-vulkan** (local GPU, free, one-off temp scripts — NOT a runtime dep): 720p master → x4 (`realesrgan-x4plus -s 4`) → 2880p → ffmpeg **lanczos** downscale to 1920×1080. **525 frames, ~17s/frame on GTX 1650S (~2.5h total).** Pitfalls: `& $exe` directly, NEVER `Start-Process` (hangs silently); x4 THEN downscale (a direct x2 with x4plus → blocky artifacts); per-frame upscaler has no temporal memory → shimmer risk masked by the slow drift (verified acceptable). WHY/HOW full record: `docs/technical/frontend-rg-web.md` §Hero video pipeline. |
+| Desktop loop (FINAL) | The 21.9s 720p master upscaled to 1080p, then **trim window 1.0→19.0s** (removes the helicopter take-off at 0–1s and the end fade at 19–21s — the full-master attempt produced a visible "rebote" with helicopters taking off twice), then **crossfade circular** D=1.2s, offset≈17.8 (ffmpeg `xfade`: the tail dissolves into the head, so the browser `loop` restarts into the opening frame imperceptibly with constant forward motion) → **17.04s** seamless-ish loop. H.264 **CRF 31**, no audio, 24fps, yuv420p + faststart. |
+| Mobile loop (FINAL — DIFFERENT pattern) | The 8s mobile clip is **NOT a native loop**; the circular crossfade did NOT work there (visible seam — the clip's start and end don't connect). **FINAL approach: keep the full 8s original + dip-to-black fades** `fade=t=in:st=0:d=0.4,fade=t=out:st=7.6:d=0.4` — the black masks the loop restart. H.264 **CRF 26**, no audio. **Pattern: if the clip isn't a native loop and crossfade seams show, use dip-to-black fades instead.** |
+| Poster (FINAL)   | `public/hero/hero-16x9-poster.avif` — **frame 0 of the FINAL `hero-16x9-1080.mp4`** (34.6 KB). MUST match the video's first frame (no visual jump at start); **regenerate after every re-encode**. |
+| Final files      | `public/hero/hero-16x9-1080.mp4` — **1920×1080, 17.04s, 24fps, H.264 CRF 31, no audio, 2.91 MB** (budget ≤4MB ✓) · `public/hero/hero-9x16-loop.mp4` — **720×1280, 8s, 24fps, H.264 CRF 26, no audio, 1.49 MB** (budget ≤2MB ✓). Desktop `<source>` → `hero-16x9-1080.mp4`; mobile `<source>` → `hero-9x16-loop.mp4`. |
+| Raw masters      | Gitignored, never served: `.src-assets/hero/{pc,movil}.jpeg` (art), `loop-master.mp4` (21.9s 720p Veo), `video/hero-1080-raw.mp4` (upscaled pre-trim), `frames-src/` (525), `frames-upscaled/` (525), `frames-scroll/` (175 WebP — reserved for a future scroll-image). |
+| Integration      | `<video autoplay muted loop playsInline preload="none" poster="/hero/hero-16x9-poster.avif">` with per-breakpoint sources (16:9 ≥768px → `hero-16x9-1080.mp4` / 9:16 ≤767px → `hero-9x16-loop.mp4`) INSIDE `#hero-art` (GSAP scale applies). Reduced-motion: `.hero-video { display: none }` (CSS-only, still picture shows). See `docs/technical/frontend-rg-web.md` Track 2. |
+| Rollback         | Remove the `<video>` block from `Hero.tsx` + the `.hero-video` CSS → the `<picture>` still is the visible hero again (no other change).                                                                                                                                                                            |
+
+## Post-processing (applied 2026-09-07; PR2 record — kept for history)
+
+1. 16:9 master resized to 2400w (contract min 2400×1350; source was 2752×1536).
+2. Encoded with sharp: AVIF q70/q66 at 640 / 1280 / 1920 / 2400w (16:9) and
+   640 / 1280 / 1920w (9:16); WebP q80 at 1280 / 2400w (16:9) and
+   640 / 1280 / 1920w (9:16). `effort: 9` on AVIF.
+3. Raw source JPEGs removed from `public/hero/` (not served).
+4. Provenance recorded here (§Generation record) and in
+   `docs/technical/frontend-rg-web.md` §Asset provenance.
+
+**PR4 replaced the PR2 family on 2026-09-08** (see §PR4 re-encode record) — the
+PR2 ladder above is fully superseded.

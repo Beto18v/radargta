@@ -66,7 +66,7 @@ export default function Countdown() {
     return (
       <div className="flex flex-col items-center gap-3">
         <span className="font-display text-4xl uppercase tracking-wide text-neon-pink neon-glow-pink sm:text-6xl">
-          ¡GTA 6 YA ESTÁ AQUÍ!
+          ¡GTA VI YA ESTÁ AQUÍ!
         </span>
         <span className="text-muted">Bienvenido a Leonida.</span>
       </div>
@@ -84,7 +84,7 @@ export default function Countdown() {
     <div
       className="flex items-start justify-center gap-2 sm:gap-4"
       role="timer"
-      aria-label="Cuenta regresiva para el lanzamiento de GTA 6"
+      aria-label="Cuenta regresiva para el lanzamiento de GTA VI"
     >
       {CELLS.map((cell, index) => (
         <Fragment key={cell.key}>
@@ -97,7 +97,14 @@ export default function Countdown() {
             </span>
           ) : null}
           <div className="count-cell">
-            <span className={`count-digit ${!ready ? "opacity-40" : ""}`}>
+            {/* Key remount (design D4): value change remounts the span so the
+                digit-tick keyframe replays (transform/opacity only, no CLS).
+                Reduced-motion: global 0.01ms kill-switch makes it an instant
+                swap — current behavior preserved, no JS motion check. */}
+            <span
+              key={`${cell.key}-${values[cell.key]}`}
+              className={`count-digit ${!ready ? "opacity-40" : ""}`}
+            >
               {values[cell.key]}
             </span>
             <span className="count-label">{cell.label}</span>
